@@ -22,6 +22,13 @@ export default function AdminLayout({
   useEffect(() => {
     // Verificar se o usuário está autenticado como admin e redirecionar adequadamente
     if (!isLoading) {
+      console.log('Layout Admin - Estado de autenticação:', { 
+        isLoading, 
+        isAdminLoginPage, 
+        user: user ? { role: user.role, name: user.name } : null,
+        isAdmin
+      });
+      
       // Se estiver na página de login e for admin, redirecionar para o dashboard
       if (isAdminLoginPage && user && user.role === 'admin') {
         console.log("Admin já autenticado, redirecionando para o dashboard");
@@ -143,7 +150,7 @@ export default function AdminLayout({
             <nav className="space-y-1">
               <Link
                 href="/admin"
-                className={`nav-link ${pathname === '/admin' || pathname.startsWith('/admin/') && pathname === '/admin' ? 'active' : ''}`}
+                className={`nav-link ${pathname === '/admin' ? 'active' : ''}`}
                 onClick={() => setIsMobileSidebarOpen(false)}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -161,16 +168,19 @@ export default function AdminLayout({
                 </svg>
                 Gerenciar Documentos
               </Link>
-              <Link
-                href="/admin/paginas"
-                className={`nav-link ${pathname === '/admin/paginas' || pathname.startsWith('/admin/paginas/') ? 'active' : ''}`}
-                onClick={() => setIsMobileSidebarOpen(false)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                </svg>
-                Editar Páginas
-              </Link>
+              {/* Hidden menu items */}
+              <div style={{ display: 'none' }}>
+                <Link
+                  href="/admin/paginas"
+                  className={`nav-link ${pathname === '/admin/paginas' || pathname.startsWith('/admin/paginas/') ? 'active' : ''}`}
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                  </svg>
+                  Editar Páginas
+                </Link>
+              </div>
               <Link
                 href="/admin/usuarios"
                 className={`nav-link ${pathname === '/admin/usuarios' || pathname.startsWith('/admin/usuarios/') ? 'active' : ''}`}

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { User, IUser } from '../models/user';
 import crypto from 'crypto';
+import { AnyRequestHandler } from '../types/express';
 
 // Lista local de refresh tokens (em produção, seria armazenada em banco de dados)
 const refreshTokens: Map<string, { userId: string, expiresAt: Date }> = new Map();
@@ -34,12 +35,14 @@ const generateTokens = (user: IUser) => {
     throw new Error('JWT_SECRET não está definido');
   }
   
+  // Incluir as propriedades do usuário no token para acesso mais fácil
   const accessToken = jwt.sign(
     { 
       id: user._id, 
       email: user.email,
       role: user.role,
-      name: user.name
+      name: user.name,
+      properties: user.properties
     }, 
     jwtSecret, 
     { expiresIn: ACCESS_TOKEN_EXPIRY }
@@ -61,7 +64,7 @@ const generateTokens = (user: IUser) => {
 /**
  * Registra um novo usuário
  */
-export const register = async (req: Request, res: Response, next: NextFunction) => {
+export const register: AnyRequestHandler = async (req, res, next) => {
   try {
     const parseResult = registerSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -122,12 +125,16 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 /**
  * Realiza login de um usuário
  */
-export const login = async (req: Request, res: Response, next: NextFunction) => {
+export const login: AnyRequestHandler = async (req, res, next) => {
   try {
+    console.log('Tentativa de login:', req.body.email);
+    
     const parseResult = loginSchema.safeParse(req.body);
     if (!parseResult.success) {
+      console.log('Dados de login inválidos:', parseResult.error.format());
       res.status(400).json({ 
         error: 'Dados de login inválidos',
+        message: 'Por favor, forneça email e senha válidos',
         details: parseResult.error.format()
       });
       return;
@@ -138,8 +145,10 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     // Busca o usuário
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('Usuário não encontrado:', email);
       res.status(401).json({ 
         error: 'Credenciais inválidas',
+        message: 'Email ou senha incorretos',
         code: 'INVALID_CREDENTIALS'
       });
       return;
@@ -148,15 +157,27 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     // Verifica a senha
     const passwordValid = await user.comparePassword(password);
     if (!passwordValid) {
+      console.log('Senha inválida para usuário:', email);
       res.status(401).json({ 
         error: 'Credenciais inválidas',
+        message: 'Email ou senha incorretos',
         code: 'INVALID_CREDENTIALS'
       });
       return;
     }
     
     try {
+      console.log('Login bem-sucedido para:', email, 'Papel:', user.role, 'Propriedades:', user.properties);
       const { accessToken, refreshToken } = generateTokens(user);
+      
+      // Configurar cookies para autenticação alternativa
+      res.cookie('authToken', accessToken, {
+        httpOnly: false, // Precisa ser acessível pelo JavaScript do cliente
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+        path: '/'
+      });
       
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
@@ -185,6 +206,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       });
     }
   } catch (error) {
+    console.error('Erro não tratado no login:', error);
     next(error);
   }
 };
@@ -192,7 +214,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 /**
  * Renovação de token de acesso
  */
-export const refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+export const refreshToken: AnyRequestHandler = async (req, res, next) => {
   try {
     const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
     
@@ -264,7 +286,7 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
 /**
  * Obtém informações do usuário logado
  */
-export const getCurrentUser = async (req: Request, res: Response, next: NextFunction) => {
+export const getCurrentUser: AnyRequestHandler = async (req, res, next) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -290,7 +312,7 @@ export const getCurrentUser = async (req: Request, res: Response, next: NextFunc
 /**
  * Realiza logout de um usuário
  */
-export const logout = (req: Request, res: Response, next: NextFunction) => {
+export const logout: AnyRequestHandler = (req, res, next) => {
   try {
     const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
     
@@ -316,7 +338,7 @@ export const logout = (req: Request, res: Response, next: NextFunction) => {
 /**
  * Lista todos os usuários (apenas para administradores)
  */
-export const listUsers = async (req: Request, res: Response, next: NextFunction) => {
+export const listUsers: AnyRequestHandler = async (req, res, next) => {
   try {
     const users = await User.find({}, { password: 0 });
     res.json({ users });

@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import mongoose from 'mongoose';
 import routes from './routes';
+import authRouter from './routes/auth';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -17,10 +18,30 @@ const app = express();
 // Configuração do CORS mais segura
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
-  credentials: true // Necessário para cookies
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
+  credentials: true, // Necessário para cookies
+  maxAge: 86400 // Cache preflight por 24 horas
 }));
+
+// Configurar opções de cookie padrão para segurança
+app.use((req, res, next) => {
+  const originalCookie = res.cookie.bind(res);
+  
+  // Sobrescrever o método cookie para aplicar configurações padrão
+  res.cookie = function(name: string, value: string, options: any = {}) {
+    const defaultOptions = {
+      httpOnly: options.httpOnly !== false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: options.sameSite || 'lax'
+    };
+    
+    return originalCookie(name, value, Object.assign({}, defaultOptions, options));
+  };
+  
+  next();
+});
 
 // Middlewares de segurança
 app.use(helmet({
@@ -57,7 +78,8 @@ if (!DISABLE_RATE_LIMITS) {
 
 // Middleware para parsear JSON e cookies
 app.use(express.json({ limit: '1mb' })); // Limitar tamanho do payload
-app.use(cookieParser());
+app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Para dados de formulário
+app.use(cookieParser(process.env.COOKIE_SECRET || 'defesa-admin-secret')); // Usar secret para cookies assinados
 
 // Servir arquivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -71,7 +93,10 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Usar o router centralizado
-app.use(routes);
+app.use('/api', routes);
+
+// Adicionar explicitamente as rotas de autenticação
+app.use('/api/auth', authRouter);
 
 // Rota principal
 app.get('/', (req, res) => {

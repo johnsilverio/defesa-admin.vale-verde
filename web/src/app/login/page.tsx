@@ -56,11 +56,23 @@ export default function Login() {
       console.log('Resultado do login:', result);
       
       if (result.success) {
-        // Redirect to home page (Início) after login
-        router.replace('/');
+        // Feedback visual de sucesso antes do redirecionamento
+        setError('');
+        setValidationError('');
+        
+        // Determinar para onde redirecionar com base no papel do usuário
+        if (result.role === 'admin') {
+          console.log('Redirecionando administrador para o painel');
+          router.push('/admin');
+        } else {
+          console.log('Redirecionando usuário para a página inicial');
+          // Usuários normais vão para a página inicial da propriedade
+          router.push('/');
+        }
       } else {
         // Definir mensagem de erro e não redirecionar
-        setError(result.message);
+        console.error('Falha no login:', result.message);
+        setError(result.message || 'Credenciais inválidas. Por favor, verifique seu email e senha.');
       }
     } catch (err) {
       console.error('Erro detalhado de login:', err);

@@ -13,12 +13,7 @@ const router = Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Auth routes
-router.post('/auth/register', authController.register);
-router.post('/auth/login', authController.login);
-router.post('/auth/refresh-token', authController.refreshToken);
-router.post('/auth/logout', authMiddleware, authController.logout);
-router.get('/auth/me', authMiddleware, authController.getCurrentUser);
+// Auth routes removidas - usaremos o router de autenticação específico em /api/auth
 
 // Property routes
 router.get('/properties', authMiddleware, propertyController.getAllProperties);

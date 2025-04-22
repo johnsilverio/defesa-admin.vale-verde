@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { Property, IProperty } from '../models/property';
 import { slugify } from '../utils/slugify';
+import { AnyRequestHandler } from '../types/express';
 
 // Validation schema
 const propertySchema = z.object({
@@ -11,7 +12,7 @@ const propertySchema = z.object({
 });
 
 // Get all properties
-export const getAllProperties = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllProperties: AnyRequestHandler = async (req, res, next) => {
   try {
     const properties = await Property.find().sort({ name: 1 });
     res.json(properties);
@@ -21,7 +22,7 @@ export const getAllProperties = async (req: Request, res: Response, next: NextFu
 };
 
 // Get a property by ID
-export const getPropertyById = async (req: Request, res: Response, next: NextFunction) => {
+export const getPropertyById: AnyRequestHandler = async (req, res, next) => {
   try {
     const property = await Property.findById(req.params.id);
     if (!property) {
@@ -34,7 +35,7 @@ export const getPropertyById = async (req: Request, res: Response, next: NextFun
 };
 
 // Create a new property
-export const createProperty = async (req: Request, res: Response, next: NextFunction) => {
+export const createProperty: AnyRequestHandler = async (req, res, next) => {
   try {
     const parseResult = propertySchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -71,7 +72,7 @@ export const createProperty = async (req: Request, res: Response, next: NextFunc
 };
 
 // Update a property
-export const updateProperty = async (req: Request, res: Response, next: NextFunction) => {
+export const updateProperty: AnyRequestHandler = async (req, res, next) => {
   try {
     const parseResult = propertySchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -114,7 +115,7 @@ export const updateProperty = async (req: Request, res: Response, next: NextFunc
 };
 
 // Delete a property
-export const deleteProperty = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteProperty: AnyRequestHandler = async (req, res, next) => {
   try {
     const property = await Property.findByIdAndDelete(req.params.id);
     if (!property) {

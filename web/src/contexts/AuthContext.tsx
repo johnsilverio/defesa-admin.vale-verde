@@ -1,250 +1,160 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { authApi, saveAuthData, clearAuthData, validateToken, refreshAccessToken, User } from '@/utils/api';
 
-type AuthContextType = {
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'user' | 'admin';
+  properties?: string[];
+}
+
+export interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; message: string; role?: 'user' | 'admin' }>;
-  logout: () => Promise<void>;
-  isAuthenticated: boolean;
   isAdmin: boolean;
-  refreshSession: () => Promise<boolean>;
-};
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string, role?: string }>;
+  logout: () => void;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Função para obter usuário atual do localStorage
-  const getUserFromStorage = (): User | null => {
-    if (typeof window === 'undefined') return null;
-    
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) return null;
-    
-    try {
-      return JSON.parse(storedUser) as User;
-    } catch (error) {
-      console.error('Erro ao analisar dados do usuário:', error);
-      localStorage.removeItem('user');
-      return null;
-    }
-  };
-
-  // Inicializa o estado de autenticação
+  // Check if user is logged in
   useEffect(() => {
-    const initAuth = async () => {
-      setIsLoading(true);
+    const checkAuth = async () => {
+      const storedToken = localStorage.getItem('auth_token');
       
-      try {
-        // Verifica se há um usuário no localStorage
-        const storedUser = getUserFromStorage();
-        
-        if (storedUser) {
-          // Se houver usuário, definimos o estado inicial
-          setUser(storedUser);
+      if (storedToken) {
+        setToken(storedToken);
+        try {
+          console.log('Validando token armazenado');
+          const { data } = await axios.get(`/api/auth/me`, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+            // Adicionar timeout para evitar espera infinita
+            timeout: 5000
+          });
           
-          // Verificamos se o token ainda é válido na API
-          const isValid = await validateToken();
-          
-          // Se não for válido, tentamos o refresh token
-          if (!isValid) {
-            try {
-              // Tenta atualizar o token
-              await refreshAccessToken();
-              
-              // Atualiza informações do usuário após refresh bem-sucedido
-              const { user: currentUser } = await authApi.getCurrentUser();
-              setUser(currentUser);
-              
-              // Salva o usuário atualizado no localStorage
-              localStorage.setItem('user', JSON.stringify(currentUser));
-            } catch (refreshError) {
-              // Se falhar no refresh, limpamos o estado
-              console.error('Falha ao atualizar sessão:', refreshError);
-              setUser(null);
-              clearAuthData();
-            }
+          if (data.user) {
+            console.log('Usuário autenticado:', data.user);
+            setUser(data.user);
+            
+            // Configurar cookie para autenticação alternativa
+            document.cookie = `authToken=${storedToken}; path=/; max-age=${60*60*24*7}; SameSite=Strict`;
+          } else {
+            console.error('Resposta de validação inválida:', data);
+            localStorage.removeItem('auth_token');
+            setToken(null);
           }
-        } else {
-          // Se não houver usuário no localStorage, definimos o estado como não autenticado
-          setUser(null);
+        } catch (error) {
+          console.error('Error validating token:', error);
+          localStorage.removeItem('auth_token');
+          document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          setToken(null);
         }
-      } catch (error) {
-        console.error('Erro ao inicializar autenticação:', error);
-        setUser(null);
-        clearAuthData();
-      } finally {
-        setIsLoading(false);
       }
+      
+      setIsLoading(false);
     };
     
-    initAuth();
+    checkAuth();
   }, []);
 
-  // Função de login
-  const login = async (email: string, password: string): Promise<{ success: boolean; message: string; role?: 'user' | 'admin' }> => {
-    setIsLoading(true);
-    
+  const login = async (email: string, password: string): Promise<{ success: boolean; message?: string, role?: string }> => {
     try {
-      // Log para debug
+      setIsLoading(true);
       console.log('Tentando login com:', email);
+      const { data } = await axios.post(`/api/auth/login`, {
+        email,
+        password
+      });
       
-      // Usar o utilitário de API para fazer login
-      const response = await authApi.login({ email, password });
+      console.log('Resposta do login:', data);
       
-      // Log para debug
-      console.log('Resposta de login:', response);
-      
-      // Definir o usuário atual
-      setUser(response.user);
-      
-      // Salvar informações no localStorage para persistência
-      localStorage.setItem('user', JSON.stringify(response.user));
-      
-      // Persistir token no localStorage também para garantir que permanece após recarregamento
-      if (response.accessToken) {
-        localStorage.setItem('token', response.accessToken);
+      // Verificar se recebemos os dados esperados
+      if (!data.accessToken || !data.user) {
+        console.error('Resposta de login inválida:', data);
+        return { success: false, message: 'Resposta de login inválida do servidor' };
       }
       
-      // Determinar se o login é administrativo baseado no path atual
-      const isAdminLogin = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+      setUser(data.user);
+      setToken(data.accessToken);
+      localStorage.setItem('auth_token', data.accessToken);
       
-      // Se for login administrativo e o usuário não for admin, não considere como sucesso
-      if (isAdminLogin && response.user.role !== 'admin') {
-        setUser(null);
-        clearAuthData();
-        return { 
-          success: false, 
-          message: 'Você não tem permissão de administrador.', 
-          role: response.user.role 
-        };
+      // Configurar cookie para autenticação alternativa
+      document.cookie = `authToken=${data.accessToken}; path=/; max-age=${60*60*24*7}; SameSite=Strict`;
+      
+      if (data.refreshToken) {
+        localStorage.setItem('refresh_token', data.refreshToken);
       }
       
-      return { 
-        success: true, 
-        message: 'Login bem-sucedido!', 
-        role: response.user.role 
-      };
-    } catch (error) {
-      console.error('Erro de login:', error);
+      return { success: true, role: data.user.role };
+    } catch (error: any) {
+      console.error('Login error:', error);
       
-      // Obter mensagem detalhada do erro
-      let errorMessage = 'Credenciais inválidas. Por favor, tente novamente.';
-      
-      if (error instanceof Error) {
-        try {
-          // Tentar extrair mensagem detalhada do erro da API
-          const apiError = JSON.parse(error.message);
-          errorMessage = apiError.error || apiError.message || errorMessage;
-        } catch {
-          // Se não for um erro JSON, usar a mensagem regular
-          errorMessage = error.message || errorMessage;
-        }
+      // Extrair mensagem de erro mais detalhada
+      let message = 'Erro ao fazer login';
+      if (error.response?.data) {
+        message = error.response.data.message || error.response.data.error || message;
       }
       
-      // Certifique-se de que o estado é limpo em caso de erro
-      setUser(null);
-      clearAuthData();
-      
-      return { 
-        success: false, 
-        message: errorMessage
-      };
+      return { success: false, message };
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Função de logout
-  const logout = async (): Promise<void> => {
-    setIsLoading(true);
+  const logout = () => {
+    const refreshToken = localStorage.getItem('refresh_token');
     
-    try {
-      // Verificar se o usuário é admin antes de limpar os dados
-      const isUserAdmin = user?.role === 'admin';
-      
-      // Chamar a API de logout
-      await authApi.logout();
-      
-      // Limpar dados do usuário e token
-      setUser(null);
-      
-      // Redirecionar com base na função do usuário
-      if (isUserAdmin) {
-        router.push('/admin/login');
-      } else {
-        router.push('/login');
-      }
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-      
-      // Mesmo em caso de erro, limpar os dados locais
-      setUser(null);
-      clearAuthData();
-      
-      router.push('/login');
-    } finally {
-      setIsLoading(false);
+    if (token && refreshToken) {
+      // Call the logout endpoint to invalidate refresh token
+      axios.post(
+        `/api/auth/logout`,
+        { refreshToken },
+        { headers: { Authorization: `Bearer ${token}` } }
+      ).catch(error => {
+        console.error('Error during logout:', error);
+      });
     }
+    
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('refresh_token');
+    
+    // Limpar cookie de autenticação
+    document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    
+    // Determinar para onde redirecionar com base no caminho atual
+    const isAdminPath = window.location.pathname.startsWith('/admin');
+    router.push(isAdminPath ? '/admin/login' : '/login');
   };
 
-  // Função para atualizar a sessão
-  const refreshSession = async (): Promise<boolean> => {
-    try {
-      // Tenta atualizar o token
-      await refreshAccessToken();
-      
-      // Atualiza informações do usuário
-      const { user: currentUser } = await authApi.getCurrentUser();
-      setUser(currentUser);
-      
-      // Salva o usuário atualizado no localStorage
-      localStorage.setItem('user', JSON.stringify(currentUser));
-      
-      return true;
-    } catch (error) {
-      console.error('Erro ao atualizar sessão:', error);
-      
-      // Se falhar, limpa o estado
-      setUser(null);
-      clearAuthData();
-      
-      return false;
-    }
-  };
-
-  // Estados derivados
-  const isAuthenticated = !!user;
   const isAdmin = user?.role === 'admin';
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        isLoading, 
-        login, 
-        logout, 
-        isAuthenticated, 
-        isAdmin,
-        refreshSession
-      }}
-    >
+    <AuthContext.Provider value={{ user, token, isLoading, isAdmin, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
+  
   if (context === undefined) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
+    throw new Error('useAuth must be used within an AuthProvider');
   }
+  
   return context;
-};
+}

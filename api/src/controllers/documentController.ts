@@ -7,6 +7,7 @@ import { Category } from '../models/category';
 import { Property } from '../models/property';
 import { FileService } from '../services/fileService';
 import { normalizeFileName } from '../utils/slugify';
+import { AnyRequestHandler } from '../types/express';
 
 // Initialize file service
 const fileService = new FileService();
@@ -20,7 +21,7 @@ const documentSchema = z.object({
 });
 
 // Get all documents (with optional filters)
-export const getAllDocuments = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllDocuments: AnyRequestHandler = async (req, res, next) => {
   try {
     const { category, property, search } = req.query;
     
@@ -53,7 +54,7 @@ export const getAllDocuments = async (req: Request, res: Response, next: NextFun
 };
 
 // Get a document by ID
-export const getDocumentById = async (req: Request, res: Response, next: NextFunction) => {
+export const getDocumentById: AnyRequestHandler = async (req, res, next) => {
   try {
     const document = await Document.findById(req.params.id)
       .populate('category', 'name slug')
@@ -70,7 +71,7 @@ export const getDocumentById = async (req: Request, res: Response, next: NextFun
 };
 
 // Create a new document
-export const createDocument = async (req: Request & { file?: Express.Multer.File, user?: any }, res: Response, next: NextFunction) => {
+export const createDocument: AnyRequestHandler = async (req: Request & { file?: Express.Multer.File }, res, next) => {
   try {
     // Validate request body
     const parseResult = documentSchema.safeParse(req.body);
@@ -134,7 +135,7 @@ export const createDocument = async (req: Request & { file?: Express.Multer.File
       filePath,
       category: categoryExists._id,
       property: propertyExists.slug,
-      uploadedBy: req.user._id
+      uploadedBy: req.user?._id
     });
     
     await document.save();
@@ -146,7 +147,7 @@ export const createDocument = async (req: Request & { file?: Express.Multer.File
 };
 
 // Update a document
-export const updateDocument = async (req: Request & { file?: Express.Multer.File, user?: any }, res: Response, next: NextFunction) => {
+export const updateDocument: AnyRequestHandler = async (req: Request & { file?: Express.Multer.File }, res, next) => {
   try {
     // Validate request body
     const parseResult = documentSchema.safeParse(req.body);
@@ -234,7 +235,7 @@ export const updateDocument = async (req: Request & { file?: Express.Multer.File
 };
 
 // Delete a document
-export const deleteDocument = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteDocument: AnyRequestHandler = async (req, res, next) => {
   try {
     const document = await Document.findById(req.params.id);
     if (!document) {
@@ -254,7 +255,7 @@ export const deleteDocument = async (req: Request, res: Response, next: NextFunc
 };
 
 // Download a document
-export const downloadDocument = async (req: Request, res: Response, next: NextFunction) => {
+export const downloadDocument: AnyRequestHandler = async (req, res, next) => {
   try {
     const document = await Document.findById(req.params.id);
     if (!document) {

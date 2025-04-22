@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Category, ICategory } from '../models/category';
 import { Property } from '../models/property';
 import { slugify } from '../utils/slugify';
+import { AnyRequestHandler } from '../types/express';
 
 // Validation schema
 const categorySchema = z.object({
@@ -12,7 +13,7 @@ const categorySchema = z.object({
 });
 
 // Get all categories (optionally filtered by property)
-export const getAllCategories = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllCategories: AnyRequestHandler = async (req, res, next) => {
   try {
     const { property } = req.query;
     const filter = property ? { property: property as string } : {};
@@ -25,7 +26,7 @@ export const getAllCategories = async (req: Request, res: Response, next: NextFu
 };
 
 // Get a category by ID
-export const getCategoryById = async (req: Request, res: Response, next: NextFunction) => {
+export const getCategoryById: AnyRequestHandler = async (req, res, next) => {
   try {
     const category = await Category.findById(req.params.id);
     if (!category) {
@@ -38,7 +39,7 @@ export const getCategoryById = async (req: Request, res: Response, next: NextFun
 };
 
 // Create a new category
-export const createCategory = async (req: Request, res: Response, next: NextFunction) => {
+export const createCategory: AnyRequestHandler = async (req, res, next) => {
   try {
     const parseResult = categorySchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -91,7 +92,7 @@ export const createCategory = async (req: Request, res: Response, next: NextFunc
 };
 
 // Update a category
-export const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
+export const updateCategory: AnyRequestHandler = async (req, res, next) => {
   try {
     const parseResult = categorySchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -153,7 +154,7 @@ export const updateCategory = async (req: Request, res: Response, next: NextFunc
 };
 
 // Delete a category
-export const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteCategory: AnyRequestHandler = async (req, res, next) => {
   try {
     const category = await Category.findByIdAndDelete(req.params.id);
     if (!category) {

@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 
 interface User {
-  id: number;
+  id: string;
   email: string;
   name: string;
   role: 'user' | 'admin';
@@ -21,7 +21,7 @@ export default function UsersPage() {
     name: '',
     email: '',
     password: '',
-    role: 'user' as const,
+    role: 'user' as 'user' | 'admin',
     properties: ['fazenda-brilhante']
   });
   const { user } = useAuth();
@@ -37,15 +37,18 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/auth/users', {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/auth/users`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
       setUsers(data.users);
+      console.log('Usuários carregados:', data.users);
     } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
       toast.error('Erro ao carregar usuários');
     } finally {
       setLoading(false);
@@ -62,11 +65,12 @@ export default function UsersPage() {
     };
     
     try {
-      const response = await fetch('/api/auth/register', {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(userData)
       });

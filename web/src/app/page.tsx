@@ -8,25 +8,19 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function HomePage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      // If not authenticated, redirect to login
-      router.replace('/login');
-    }
-  }, [isAuthenticated, isLoading, router]);
-
-  // Show loading while checking auth state
-  if (isLoading || !isAuthenticated) {
-    return <Loading />;
-  }
+  const { user } = useAuth();
+  
+  // Definir o ID da propriedade padrão para a Fazenda Brilhante
+  const propertyId = 'fazenda-brilhante';
 
   return (
-    <>
+    <ProtectedRoute propertyId={propertyId}>
+      {/* O conteúdo só será renderizado se o usuário estiver autenticado e tiver acesso à propriedade */}
+
       <Header />
       <main>
         {/* Hero Section */}
@@ -239,6 +233,6 @@ export default function HomePage() {
 
       </main>
       <Footer />
-    </>
+    </ProtectedRoute>
   );
 }
