@@ -39,11 +39,11 @@ export default function ContentPageLayout({
     <>
       <Header />
       <main>
-        <section className="hero py-16 md:py-20 text-center relative">
+        <section className="hero py-14 md:py-18 text-center relative mb-6">
           {/* Hero pattern background */}
           <div className="hero-pattern"></div>
           
-          <div className="container relative z-10">
+          <div className="container relative z-10 flex flex-col justify-center items-center">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 animate-fadeIn text-balance text-white">
               {title}
             </h1>
@@ -61,7 +61,7 @@ export default function ContentPageLayout({
           <div className="absolute bottom-0 w-full h-24 bg-gradient-to-t from-[var(--primary-dark)] to-transparent z-[2]"></div>
         </section>
         
-        <div className="container py-8 md:py-12">
+        <div className="container py-8 md:py-10 mt-4">
           {/* Optional breadcrumbs */}
           {breadcrumbs && breadcrumbs.length > 0 && (
             <nav className="flex mb-6 text-sm" aria-label="Breadcrumb">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import ContentPageLayout from '@/components/ContentPageLayout';
 import { apiRequest } from '@/utils/api';
@@ -47,6 +47,11 @@ export default function DocumentosPage() {
   const [error, setError] = useState('');
   const { token, isAuthenticated } = useAuth();
   
+  // Refs e estados para o carrossel
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [totalSlides, setTotalSlides] = useState(0);
+  
   // Fetch documents from API
   useEffect(() => {
     setLoading(true);
@@ -88,6 +93,14 @@ export default function DocumentosPage() {
     fetchData();
   }, [isAuthenticated, token]);
 
+  // Atualiza o total de slides quando os documentos destacados são carregados
+  useEffect(() => {
+    const highlightedDocs = documents.filter(doc => doc.isHighlighted);
+    // Calcula quantos slides vamos precisar baseado no número de documentos visíveis por vez
+    const itemsPerView = 3; // Número de itens visíveis por vez
+    setTotalSlides(Math.max(1, Math.ceil(highlightedDocs.length / itemsPerView)));
+  }, [documents]);
+
   // Filter menu options based on available categories
   const filterCategories = [
     { id: 'all', name: 'Todos' },
@@ -98,6 +111,9 @@ export default function DocumentosPage() {
   const filteredDocuments = activeFilter === 'all' 
     ? documents 
     : documents.filter(doc => doc.category._id === activeFilter);
+    
+  // Get highlighted documents
+  const highlightedDocuments = documents.filter(doc => doc.isHighlighted);
 
   // Group documents by category
   const documentsByCategory: { [key: string]: Document[] } = {};
@@ -113,27 +129,148 @@ export default function DocumentosPage() {
   
   // Function to display a message when no documents are available
   const renderEmptyState = () => (
-    <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-      <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        className="h-16 w-16 mx-auto text-gray-400 mb-4" 
-        fill="none" 
-        viewBox="0 0 24 24" 
-        stroke="currentColor"
-      >
-        <path 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          strokeWidth={1.5} 
-          d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
-        />
-      </svg>
-      <h3 className="text-xl font-bold text-gray-700 mb-2">Nenhum documento disponível</h3>
-      <p className="text-gray-600 mb-4">
-        Ainda não foram adicionados documentos a esta categoria.
-      </p>
+    <div className="empty-state">
+      <div className="empty-state-icon">
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          className="h-16 w-16" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth={1.5} 
+            d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+          />
+        </svg>
+      </div>
+      <h3 className="empty-state-title">Nenhum documento disponível</h3>
+      <p className="empty-state-text">Ainda não foram adicionados documentos a esta categoria.</p>
     </div>
   );
+  
+  // Function to render document card
+  const renderDocumentCard = (doc: Document) => (
+    <div 
+      key={doc._id} 
+      className={`document-card ${doc.isHighlighted ? 'document-card-highlighted' : ''}`}
+      data-category={doc.category.slug}
+    >
+      {doc.isHighlighted && (
+        <span className="document-tag document-tag-important">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zm7-10a1 1 0 01.707.293l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L13.586 9H10a1 1 0 110-2h3.586l-2.293-2.293A1 1 0 0112 2z" clipRule="evenodd" />
+          </svg>
+          Documento Crucial
+        </span>
+      )}
+      <h3>{doc.title}</h3>
+      <p>{doc.description}</p>
+      <a 
+        href={`/api/documents/${doc._id}/download`} 
+        className={`btn ${doc.isHighlighted ? 'btn-primary' : 'btn-secondary'} w-full`}
+        download={doc.originalFileName}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+        Download
+      </a>
+    </div>
+  );
+  
+  // Funções para controlar o carrossel
+  const scrollToSlide = (index: number) => {
+    if (!carouselRef.current) return;
+    
+    setCurrentSlide(index);
+    const slideWidth = carouselRef.current.offsetWidth;
+    carouselRef.current.scrollTo({
+      left: index * slideWidth,
+      behavior: 'smooth'
+    });
+  };
+  
+  const nextSlide = () => {
+    const newIndex = Math.min(currentSlide + 1, totalSlides - 1);
+    scrollToSlide(newIndex);
+  };
+  
+  const prevSlide = () => {
+    const newIndex = Math.max(currentSlide - 1, 0);
+    scrollToSlide(newIndex);
+  };
+  
+  // Renderizar o carrossel de documentos destacados
+  const renderHighlightedDocumentsCarousel = () => {
+    if (highlightedDocuments.length === 0) return null;
+    
+    // Determinar se precisamos mostrar os controles de navegação
+    const showControls = highlightedDocuments.length > 3;
+    
+    return (
+      <section className="highlighted-documents-section">
+        <h2 className="highlighted-documents-title">Documentos Destacados</h2>
+        <p className="highlighted-documents-subtitle">
+          Os documentos abaixo são particularmente relevantes para a defesa administrativa da Fazenda Brilhante:
+        </p>
+        
+        <div className="carousel-container">
+          <div 
+            ref={carouselRef} 
+            className="carousel-track"
+          >
+            {highlightedDocuments.map(doc => (
+              <div key={doc._id} className="carousel-item">
+                {renderDocumentCard(doc)}
+              </div>
+            ))}
+          </div>
+          
+          {showControls && (
+            <>
+              <div className="carousel-controls">
+                <button 
+                  onClick={prevSlide} 
+                  className="carousel-button" 
+                  disabled={currentSlide === 0}
+                  aria-label="Documento anterior"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                
+                <button 
+                  onClick={nextSlide} 
+                  className="carousel-button" 
+                  disabled={currentSlide === totalSlides - 1}
+                  aria-label="Próximo documento"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="carousel-dots">
+                {Array.from({ length: totalSlides }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => scrollToSlide(index)}
+                    className={`carousel-dot ${index === currentSlide ? 'active' : ''}`}
+                    aria-label={`Ir para slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+    );
+  };
 
   if (!isAuthenticated) {
     return (
@@ -182,9 +319,10 @@ export default function DocumentosPage() {
       title="Biblioteca de Documentos"
       subtitle="Acesse todos os documentos relacionados à defesa administrativa da Fazenda Brilhante"
     >
-      <section className="mb-10">
-        <h2 className="text-2xl font-bold text-[var(--dark-green)] mb-6 text-center">Filtrar Documentos</h2>
-        <div className="filter-controls justify-center">
+      {/* Filtros de documentos */}
+      <section className="mb-8">
+        <h2 className="text-xl font-bold text-[var(--primary-dark)] mb-4">Filtrar por Categoria</h2>
+        <div className="filter-controls">
           {filterCategories.map(category => (
             <button 
               key={category.id}
@@ -199,39 +337,22 @@ export default function DocumentosPage() {
 
       {activeFilter === 'all' ? (
         // Display by category when showing all
-        Object.keys(documentsByCategory).map(categoryId => {
-          const categoryName = categories.find(c => c._id === categoryId)?.name || categoryId;
-          const categoryDocs = documentsByCategory[categoryId];
+        categories.map(category => {
+          const categoryId = category._id;
+          const categoryName = category.name;
+          const categoryDocs = documentsByCategory[categoryId] || [];
           
           return (
-            <section key={categoryId} className="mb-12">
-              <h2 className="section-title text-center">{categoryName}</h2>
-              
-              {categoryDocs.length === 0 ? (
-                renderEmptyState()
-              ) : (
+            <section key={categoryId} className="mb-10">
+              <h2 className="text-xl font-bold text-[var(--primary-dark)] mb-4 pb-2 border-b border-[var(--neutral-200)]">
+                {categoryName}
+              </h2>
+              {categoryDocs.length > 0 ? (
                 <div className="document-grid">
-                  {categoryDocs.map((doc: Document) => (
-                    <div 
-                      key={doc._id} 
-                      className={`document-card ${doc.isHighlighted ? 'document-card-highlighted' : ''}`}
-                      data-category={doc.category.slug}
-                    >
-                      <h3>{doc.title}</h3>
-                      <p>
-                        {doc.isHighlighted && <span className="font-bold text-[var(--primary-green)] block mb-1">DOCUMENTO CRUCIAL:</span>}
-                        {doc.description}
-                      </p>
-                      <a 
-                        href={`/api/documents/${doc._id}/download`} 
-                        className={`btn ${doc.isHighlighted ? 'btn-primary' : 'btn-secondary'} w-full`}
-                        download={doc.originalFileName}
-                      >
-                        Download
-                      </a>
-                    </div>
-                  ))}
+                  {categoryDocs.map(renderDocumentCard)}
                 </div>
+              ) : (
+                renderEmptyState()
               )}
             </section>
           );
@@ -242,29 +363,16 @@ export default function DocumentosPage() {
           renderEmptyState()
         ) : (
           <div className="document-grid">
-            {filteredDocuments.map(doc => (
-              <div 
-                key={doc._id} 
-                className={`document-card ${doc.isHighlighted ? 'document-card-highlighted' : ''}`}
-                data-category={doc.category.slug}
-              >
-                <h3>{doc.title}</h3>
-                <p>
-                  {doc.isHighlighted && <span className="font-bold text-[var(--primary-green)] block mb-1">DOCUMENTO CRUCIAL:</span>}
-                  {doc.description}
-                </p>
-                <a 
-                  href={`/api/documents/${doc._id}/download`} 
-                  className={`btn ${doc.isHighlighted ? 'btn-primary' : 'btn-secondary'} w-full`}
-                  download={doc.originalFileName}
-                >
-                  Download
-                </a>
-              </div>
-            ))}
+            {filteredDocuments.map(renderDocumentCard)}
           </div>
         )
       )}
+      
+      {/* Mostrar mensagem de vazio se não houver documentos em nenhuma categoria quando o filtro for "todos" */}
+      {activeFilter === 'all' && documents.length === 0 && renderEmptyState()}
+      
+      {/* Carrossel de documentos destacados (exibido no início da página) */}
+      {activeFilter === 'all' && renderHighlightedDocumentsCarousel()}
     </ContentPageLayout>
   );
-} 
+}

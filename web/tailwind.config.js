@@ -20,6 +20,9 @@ module.exports = {
           lg: '4rem',
         },
       },
+      fontSize: {
+        '2xs': '0.65rem',
+      },
     },
   },
   plugins: [],

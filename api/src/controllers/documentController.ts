@@ -9,6 +9,7 @@ import { Property } from '../models/property';
 import { FileService } from '../services/fileService';
 import { normalizeFileName } from '../utils/slugify';
 import { AnyRequestHandler } from '../types/express';
+import e from 'express'
 
 // Initialize file service
 const fileService = new FileService();

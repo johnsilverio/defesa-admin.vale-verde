@@ -61,78 +61,87 @@ export default function Header() {
 
   return (
     <header className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-[var(--shadow-md)] backdrop-blur-sm bg-white/95' : 'bg-white'}`}>
-      <div className="container flex justify-between items-center py-3 md:py-4">
+      <div className="container flex justify-between items-center py-2.5 md:py-3 px-0 sm:px-4 md:px-6 lg:px-8">
         {/* Logo */}
-        <div className="h-12 md:h-10 lg:h-12 flex items-center">
-          <Link href="/" className="block h-full transition-transform duration-300 hover:scale-105">
-            <Image
-              src="/images/Logo_Vale_Verde.png"
-              alt="Logo Vale Verde"
-              width={180}
-              height={60}
-              className="h-full w-auto"
-              priority
-            />
+        <div className="flex items-center h-12 pl-0 pr-2 py-1.5">
+          <Link href="/" className="block transition-transform duration-300 hover:scale-105">
+            <div style={{ height: '2.25rem', width: 'auto' }}>
+              <Image
+                src="/images/Logo_Vale_Verde.png"
+                alt="Logo Vale Verde"
+                width={1468}
+                height={591}
+                className="h-full w-auto object-contain"
+                priority
+              />
+            </div>
           </Link>
         </div>
           
         {/* Navigation and User Controls */}
         <div className="flex items-center">
           {/* Main navigation - Desktop */}
-          <nav className="hidden md:block mr-2 lg:mr-4">
-            <ul className="flex space-x-0.5 md:space-x-1 lg:space-x-2 list-none p-0 m-0 items-center">
-              <li>
+          <nav className="hidden md:block mr-2 xl:mr-4">
+            <ul className="flex space-x-0.5 md:space-x-1 xl:space-x-2 list-none p-0 m-0 items-center h-full">
+              <li className="h-full flex items-center">
                 <Link 
                   href="/" 
-                  className={`nav-link text-xs md:text-sm lg:text-base flex items-center h-full ${isActive('/')}`}
+                  className={`nav-link text-xs lg:text-sm ${isActive('/')}`}
+                  style={{ fontSize: '0.8rem', lineHeight: '1.25rem' }}
                 >
                   Início
                 </Link>
               </li>
-              <li>
+              <li className="h-full flex items-center">
                 <Link 
                   href="/historico" 
-                  className={`nav-link text-xs md:text-sm lg:text-base flex items-center h-full ${isActive('/historico')}`}
+                  className={`nav-link text-xs lg:text-sm ${isActive('/historico')}`}
+                  style={{ fontSize: '0.8rem', lineHeight: '1.25rem' }}
                 >
                   Histórico
                 </Link>
               </li>
-              <li>
+              <li className="h-full flex items-center">
                 <Link 
                   href="/inconsistencias" 
-                  className={`nav-link text-xs md:text-sm lg:text-base flex items-center h-full ${isActive('/inconsistencias')}`}
+                  className={`nav-link text-xs lg:text-sm ${isActive('/inconsistencias')}`}
+                  style={{ fontSize: '0.8rem', lineHeight: '1.25rem' }}
                 >
                   Inconsistências
                 </Link>
               </li>
-              <li>
+              <li className="h-full flex items-center">
                 <Link 
                   href="/ocupacao" 
-                  className={`nav-link text-xs md:text-sm lg:text-base flex items-center h-full ${isActive('/ocupacao')}`}
+                  className={`nav-link text-xs lg:text-sm ${isActive('/ocupacao')}`}
+                  style={{ fontSize: '0.8rem', lineHeight: '1.25rem' }}
                 >
                   Ocupação
                 </Link>
               </li>
-              <li>
+              <li className="h-full flex items-center">
                 <Link 
                   href="/fundamentos" 
-                  className={`nav-link text-xs md:text-sm lg:text-base flex items-center h-full ${isActive('/fundamentos')}`}
+                  className={`nav-link text-xs lg:text-sm ${isActive('/fundamentos')}`}
+                  style={{ fontSize: '0.8rem', lineHeight: '1.25rem' }}
                 >
                   Fundamentos Jurídicos
                 </Link>
               </li>
-              <li>
+              <li className="h-full flex items-center">
                 <Link 
                   href="/documentos" 
-                  className={`nav-link text-xs md:text-sm lg:text-base flex items-center h-full ${isActive('/documentos')}`}
+                  className={`nav-link text-xs lg:text-sm ${isActive('/documentos')}`}
+                  style={{ fontSize: '0.8rem', lineHeight: '1.25rem' }}
                 >
                   Documentos
                 </Link>
               </li>
-              <li>
+              <li className="h-full flex items-center">
                 <Link 
                   href="/linha-do-tempo" 
-                  className={`nav-link text-xs md:text-sm lg:text-base flex items-center h-full ${isActive('/linha-do-tempo')}`}
+                  className={`nav-link text-xs lg:text-sm ${isActive('/linha-do-tempo')}`}
+                  style={{ fontSize: '0.8rem', lineHeight: '1.25rem' }}
                 >
                   Linha do Tempo
                 </Link>
@@ -144,7 +153,7 @@ export default function Header() {
           <div className="relative" ref={userMenuRef}>
             <button 
               onClick={toggleUserMenu}
-              className="flex items-center space-x-1 md:space-x-2 text-[var(--primary-dark)] hover:text-[var(--primary)] transition-colors px-2 md:px-3 py-1 md:py-2 rounded-md hover:bg-[var(--primary-50)] text-sm md:text-base"
+              className="flex items-center space-x-1 text-[var(--primary-dark)] hover:text-[var(--primary)] transition-colors px-3 py-1.5 rounded-md hover:bg-[var(--primary-50)] text-xs md:text-sm"
               aria-expanded={isUserMenuOpen}
               aria-haspopup="true"
             >
@@ -195,7 +204,7 @@ export default function Header() {
           
           {/* Mobile menu toggle */}
           <div 
-            className="flex flex-col justify-between w-6 md:w-7 h-4 md:h-5 cursor-pointer lg:hidden ml-2 md:ml-4"
+            className="flex flex-col justify-between w-6 md:w-7 h-4 md:h-5 cursor-pointer md:hidden ml-2 md:ml-4"
             onClick={toggleMenu}
             aria-expanded={isMenuOpen}
             aria-controls="mobile-menu"
@@ -209,7 +218,7 @@ export default function Header() {
 
       {/* Mobile navigation menu */}
       <div 
-        className={`lg:hidden bg-white shadow-inner overflow-hidden transition-all duration-300 ${isMenuOpen ? 'max-h-[500px]' : 'max-h-0'}`}
+        className={`bg-white shadow-inner overflow-hidden transition-all duration-300 ${isMenuOpen ? 'max-h-[500px]' : 'max-h-0'}`}
         id="mobile-menu"
       >
         <nav className="container py-4">
