@@ -1,26 +1,24 @@
 // src/utils/api.ts
 // Utilitário para fazer requisições à API
 
-// URL base da API - usando o proxy /api configurado no next.config.js
-const API_URL = '';  // Vazio para usar o proxy de API do Next.js
-
+// URL base da API - usando variáveis de ambiente para diferenciar entre ambientes
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 const ENV = process.env.NEXT_PUBLIC_ENV || 'development';
 
 // Log para debug em ambiente de desenvolvimento
 if (ENV === 'development' && typeof window !== 'undefined') {
-  console.log(`API configurada para uso através do proxy interno (${ENV})`);
+  console.log(`API configurada para: ${API_URL} (${ENV})`);
 }
 
 // Tipos para as requisições e respostas
 interface RequestOptions extends RequestInit {
   token?: string;
   data?: any;
-  retryCount?: number;
 }
 
 // Definindo tipos para as respostas da API para melhor type-safety
 export interface User {
-  id: string;
+  id: number;
   email: string;
   name?: string;
   role: 'user' | 'admin';
@@ -65,7 +63,7 @@ export function getToken(): string | null {
   
   // Se não estiver na memória, tenta do localStorage (para persistência entre recarregamentos)
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('token');
     if (token) {
       // Se for encontrado no localStorage, colocar na memória também
       inMemoryToken = token;
@@ -86,9 +84,8 @@ export function saveAuthData(data: AuthResponse): void {
   // Salva o refreshToken e dados do usuário no localStorage para persistência
   if (typeof window !== 'undefined') {
     // No localStorage só salvamos o refreshToken (mais duradouro) e os dados do usuário
-    localStorage.setItem('auth_token', data.accessToken);
     if (data.refreshToken) {
-      localStorage.setItem('refresh_token', data.refreshToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
     }
     localStorage.setItem('user', JSON.stringify(data.user));
   }
@@ -101,8 +98,8 @@ export function clearAuthData(): void {
   inMemoryToken = null;
   
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   }
 }
@@ -132,13 +129,12 @@ export async function refreshAccessToken(): Promise<string> {
   // Inicia um novo processo de refresh
   refreshTokenInProgress = (async () => {
     try {
-      console.log('Tentando renovar o token de acesso...');
-      const refreshToken = localStorage.getItem('refresh_token');
+      const refreshToken = localStorage.getItem('refreshToken');
       if (!refreshToken) {
         throw new Error('Refresh token não disponível');
       }
       
-      const response = await fetch(`/api/auth/refresh`, {
+      const response = await fetch(`${API_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +144,6 @@ export async function refreshAccessToken(): Promise<string> {
       });
       
       if (!response.ok) {
-        console.error('Falha na resposta do servidor ao renovar token:', response.status, response.statusText);
         // Se o refresh falhar, limpamos os dados de autenticação
         clearAuthData();
         throw new Error('Falha ao atualizar o token');
@@ -156,35 +151,21 @@ export async function refreshAccessToken(): Promise<string> {
       
       const data: RefreshResponse = await response.json();
       
-      if (!data.accessToken) {
-        console.error('Resposta de renovação de token inválida:', data);
-        clearAuthData();
-        throw new Error('Resposta inválida do servidor ao renovar token');
-      }
-      
-      console.log('Token renovado com sucesso');
-      
       // Salvamos o novo access token em memória
       inMemoryToken = data.accessToken;
       
-      // Salvamos no localStorage também para persistência entre recarregamentos
-      localStorage.setItem('auth_token', data.accessToken);
-      
       // Atualizamos o refresh token se vier na resposta
       if (data.refreshToken) {
-        localStorage.setItem('refresh_token', data.refreshToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
       }
       
       return data.accessToken;
     } catch (error) {
-      console.error('Erro ao renovar token:', error);
       clearAuthData();
       throw error;
     } finally {
-      // Limpa a referência para permitir novas tentativas após um timeout
-      setTimeout(() => {
-        refreshTokenInProgress = null;
-      }, 1000); // Previne múltiplas tentativas em um curto período
+      // Limpa a referência para permitir novas tentativas
+      refreshTokenInProgress = null;
     }
   })();
   
@@ -197,8 +178,6 @@ export async function refreshAccessToken(): Promise<string> {
 export async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   // Determina se estamos no cliente ou no servidor
   const isClient = typeof window !== 'undefined';
-  let retryCount = options.retryCount || 0;
-  const MAX_RETRIES = 2;
   
   // Obtém o token atual (da memória ou do localStorage)
   let token = options.token || getToken();
@@ -209,8 +188,8 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       // Tenta atualizar o token
       token = await refreshAccessToken();
     } catch (refreshError) {
-      // Se falhar na atualização, redireciona para login se for uma rota protegida
-      if (typeof window !== 'undefined' && endpoint.includes('/api/auth')) {
+      // Se falhar na atualização, redireciona para login
+      if (typeof window !== 'undefined') {
         // Verifica se estamos na área de admin para redirecionar para o login correto
         const isAdminPath = window.location.pathname.startsWith('/admin');
         window.location.href = isAdminPath ? '/admin/login' : '/login';
@@ -241,42 +220,12 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
   
   try {
     // Faz a requisição
-    const response = await fetch(`${endpoint}`, {
+    const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
       body,
       credentials: 'include', // Para enviar/receber cookies
     });
-    
-    // Se recebemos erro 401 e temos refresh token, tentamos renovar o token e refazer a requisição
-    if (response.status === 401 && isClient && localStorage.getItem('refresh_token') && retryCount < MAX_RETRIES) {
-      try {
-        // Tenta renovar o token apenas se não for uma tentativa de login/refresh
-        if (!endpoint.includes('/api/auth/refresh') && !endpoint.includes('/api/auth/login')) {
-          console.log(`Recebido erro 401, tentando renovar o token (tentativa ${retryCount + 1}/${MAX_RETRIES})...`);
-          const newToken = await refreshAccessToken();
-          
-          // Refaz a requisição com o novo token e incrementa o contador de tentativas
-          return apiRequest<T>(endpoint, { 
-            ...options, 
-            token: newToken,
-            retryCount: retryCount + 1
-          });
-        }
-      } catch (retryError) {
-        console.error('Falha ao renovar o token após erro 401:', retryError);
-        // Se falhar o retry, continuamos com o fluxo normal
-        
-        if (typeof window !== 'undefined') {
-          // Verifica se estamos na área de admin para redirecionar para o login correto
-          const isAdminPath = window.location.pathname.startsWith('/admin');
-          if (isAdminPath) {
-            console.log('Redirecionando para página de login admin após falha de autenticação');
-            window.location.href = '/admin/login?session_expired=true';
-          }
-        }
-      }
-    }
     
     // Verifica o content-type da resposta
     const contentType = response.headers.get('content-type');
@@ -299,26 +248,61 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       const apiError: ApiError = {
         error: data.error || 'Erro desconhecido',
         code: data.code,
-        message: data.message || `${response.status}: ${response.statusText}`
+        message: data.message
       };
       
-      throw apiError;
+      // Tratamento específico para tokens expirados
+      if (response.status === 401 && data.code === 'TOKEN_EXPIRED' && isClient) {
+        try {
+          // Tenta atualizar o token e refazer a requisição
+          const newToken = await refreshAccessToken();
+          
+          // Refaz a requisição original com o novo token
+          const newOptions = {
+            ...options,
+            token: newToken
+          };
+          
+          return apiRequest<T>(endpoint, newOptions);
+        } catch (refreshError) {
+          // Se falhar no refresh, limpa dados e redireciona
+          clearAuthData();
+          
+          if (typeof window !== 'undefined') {
+            // Verifica se estamos na área de admin para redirecionar para o login correto
+            const isAdminPath = window.location.pathname.startsWith('/admin');
+            window.location.href = isAdminPath ? '/admin/login' : '/login';
+          }
+          
+          throw new Error('Sessão expirada. Por favor, faça login novamente.');
+        }
+      }
+      
+      // Para outros erros 401 (Unauthorized), pode ser que o token seja inválido
+      if (response.status === 401 && isClient) {
+        // Limpa dados de autenticação
+        clearAuthData();
+        
+        // Redireciona para a página de login apropriada
+        if (typeof window !== 'undefined') {
+          // Verifica se estamos na área de admin para redirecionar para o login correto
+          const isAdminPath = window.location.pathname.startsWith('/admin');
+          window.location.href = isAdminPath ? '/admin/login' : '/login';
+        }
+      }
+      
+      throw new Error(JSON.stringify(apiError));
     }
     
-    // Retorna os dados para requisições bem-sucedidas
-    return data as T;
+    return data;
   } catch (error) {
-    // Rethrow de erros já tratados (ApiError)
-    if ((error as ApiError)?.error) {
+    // Captura e relança erros de rede ou outros erros não relacionados à API
+    if (error instanceof Error) {
+      console.error('API request error:', error.message);
       throw error;
     }
     
-    // Cria um erro padronizado para erros não tratados
-    throw {
-      error: 'Erro na requisição',
-      message: error instanceof Error ? error.message : String(error),
-      code: 'REQUEST_ERROR'
-    } as ApiError;
+    throw new Error('Ocorreu um erro desconhecido na comunicação com o servidor');
   }
 }
 
@@ -333,7 +317,7 @@ export function isAuthenticated(): boolean {
   }
   
   // Verifica se existe um token em memória ou no localStorage
-  return !!getToken() || !!localStorage.getItem('refresh_token');
+  return !!getToken() || !!localStorage.getItem('refreshToken');
 }
 
 /**

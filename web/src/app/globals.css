@@ -11,6 +11,10 @@
   --primary-50: #edf7f0; /* Very light shade for backgrounds */
   --primary-100: #d0e8db; /* Light shade for cards and sections */
   
+  /* Add these variables for backward compatibility */
+  --primary-green: #2c6e49; /* Same as --primary */
+  --dark-green: #1e4d33; /* Same as --primary-dark */
+  
   /* Accent colors */
   --accent: #e9c46a; /* Gold accent for highlights and CTAs */
   --accent-dark: #d4a73b; /* Darker gold for hover states */

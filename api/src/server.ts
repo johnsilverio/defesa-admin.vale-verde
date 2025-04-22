@@ -9,6 +9,7 @@ import path from 'path';
 import mongoose from 'mongoose';
 import routes from './routes';
 import authRouter from './routes/auth';
+import documentsRouter from './routes/documents';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -77,8 +78,8 @@ if (!DISABLE_RATE_LIMITS) {
 }
 
 // Middleware para parsear JSON e cookies
-app.use(express.json({ limit: '1mb' })); // Limitar tamanho do payload
-app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Para dados de formulário
+app.use(express.json({ limit: '10mb' })); // Limitar tamanho do payload
+app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Para dados de formulário
 app.use(cookieParser(process.env.COOKIE_SECRET || 'defesa-admin-secret')); // Usar secret para cookies assinados
 
 // Servir arquivos estáticos
@@ -97,6 +98,9 @@ app.use('/api', routes);
 
 // Adicionar explicitamente as rotas de autenticação
 app.use('/api/auth', authRouter);
+
+// Adicionar explicitamente as rotas de documentos
+app.use('/api/documents', documentsRouter);
 
 // Rota principal
 app.get('/', (req, res) => {

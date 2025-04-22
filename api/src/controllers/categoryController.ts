@@ -1,9 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import fs from 'fs';
+import path from 'path';
 import { Category, ICategory } from '../models/category';
 import { Property } from '../models/property';
+import { Document } from '../models/document';
+import { FileService } from '../services/fileService';
 import { slugify } from '../utils/slugify';
 import { AnyRequestHandler } from '../types/express';
+
+// Inicializa o serviço de arquivos
+const fileService = new FileService();
 
 // Validation schema
 const categorySchema = z.object({
@@ -49,8 +56,10 @@ export const getCategoryById: AnyRequestHandler = async (req, res, next) => {
 // Create a new category
 export const createCategory: AnyRequestHandler = async (req, res, next) => {
   try {
+    console.log('Recebendo requisição para criar categoria:', req.body);
     const parseResult = categorySchema.safeParse(req.body);
     if (!parseResult.success) {
+      console.error('Erro de validação:', parseResult.error.format());
       return res.status(400).json({
         error: 'Dados inválidos',
         details: parseResult.error.format()
@@ -66,6 +75,7 @@ export const createCategory: AnyRequestHandler = async (req, res, next) => {
     });
     
     if (!propertyExists) {
+      console.error('Propriedade não encontrada:', property);
       return res.status(404).json({ 
         error: 'Propriedade não encontrada',
         code: 'PROPERTY_NOT_FOUND'
@@ -79,6 +89,7 @@ export const createCategory: AnyRequestHandler = async (req, res, next) => {
     });
     
     if (existingCategory) {
+      console.error('Categoria já existe:', { slug, property: propertyExists.slug });
       return res.status(409).json({
         error: 'Já existe uma categoria com este nome nesta propriedade',
         code: 'CATEGORY_EXISTS'
@@ -101,8 +112,20 @@ export const createCategory: AnyRequestHandler = async (req, res, next) => {
     });
 
     await category.save();
+    
+    // Criar a pasta para a nova categoria
+    try {
+      console.log(`Criando diretório para nova categoria: ${propertyExists.slug}/${slug}`);
+      await fileService.ensureDirectoryExists(propertyExists.slug, slug);
+      console.log(`Diretório criado com sucesso`);
+    } catch (dirError: unknown) {
+      console.error('Erro ao criar diretório para a categoria:', dirError);
+      // Não retorna erro, apenas loga, para não interromper a criação da categoria no banco
+    }
+    
     res.status(201).json(category);
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error('Erro não tratado ao criar categoria:', error);
     next(error);
   }
 };
@@ -110,8 +133,10 @@ export const createCategory: AnyRequestHandler = async (req, res, next) => {
 // Update a category
 export const updateCategory: AnyRequestHandler = async (req, res, next) => {
   try {
+    console.log('Recebendo requisição para atualizar categoria:', { id: req.params.id, body: req.body });
     const parseResult = categorySchema.safeParse(req.body);
     if (!parseResult.success) {
+      console.error('Erro de validação:', parseResult.error.format());
       return res.status(400).json({
         error: 'Dados inválidos',
         details: parseResult.error.format()
@@ -119,7 +144,7 @@ export const updateCategory: AnyRequestHandler = async (req, res, next) => {
     }
 
     const { name, description, property } = parseResult.data;
-    const slug = slugify(name);
+    const newSlug = slugify(name);
 
     // Verify that the property exists
     const propertyExists = await Property.findOne({ 
@@ -127,6 +152,7 @@ export const updateCategory: AnyRequestHandler = async (req, res, next) => {
     });
     
     if (!propertyExists) {
+      console.error('Propriedade não encontrada:', property);
       return res.status(404).json({ 
         error: 'Propriedade não encontrada',
         code: 'PROPERTY_NOT_FOUND'
@@ -136,11 +162,12 @@ export const updateCategory: AnyRequestHandler = async (req, res, next) => {
     // Check if another category has this name for this property (excluding the current one)
     const existingCategory = await Category.findOne({
       property: propertyExists.slug,
-      slug,
+      slug: newSlug,
       _id: { $ne: req.params.id }
     });
     
     if (existingCategory) {
+      console.error('Categoria já existe com esse nome:', { slug: newSlug, property: propertyExists.slug });
       return res.status(409).json({
         error: 'Já existe uma categoria com este nome nesta propriedade',
         code: 'CATEGORY_EXISTS'
@@ -150,6 +177,7 @@ export const updateCategory: AnyRequestHandler = async (req, res, next) => {
     // Find the current category to get its order if the property is changing
     const currentCategory = await Category.findById(req.params.id);
     if (!currentCategory) {
+      console.error('Categoria não encontrada:', req.params.id);
       return res.status(404).json({ error: 'Categoria não encontrada' });
     }
 
@@ -164,11 +192,73 @@ export const updateCategory: AnyRequestHandler = async (req, res, next) => {
       order = highestOrder ? highestOrder.order + 1 : 0;
     }
 
+    // Verificar se o nome/slug ou propriedade foi alterado
+    const slugChanged = currentCategory.slug !== newSlug;
+    const propertyChanged = currentCategory.property !== propertyExists.slug;
+
+    if (slugChanged || propertyChanged) {
+      console.log('Categoria sendo renomeada ou movida:', {
+        oldProperty: currentCategory.property,
+        newProperty: propertyExists.slug,
+        oldSlug: currentCategory.slug,
+        newSlug: newSlug,
+        slugChanged,
+        propertyChanged
+      });
+      
+      try {
+        // Criar o novo diretório
+        await fileService.ensureDirectoryExists(propertyExists.slug, newSlug);
+        
+        // Obter todos os documentos da categoria atual
+        const documents = await Document.find({ category: currentCategory._id });
+        
+        if (documents.length > 0) {
+          console.log(`Movendo ${documents.length} documentos para nova localização`);
+          
+          // Para cada documento, mover o arquivo para o novo local
+          for (const doc of documents) {
+            try {
+              const fileName = path.basename(doc.filePath);
+              const newFilePath = path.join(propertyExists.slug, newSlug, fileName);
+              
+              // Certifique-se de que o arquivo existe antes de tentar movê-lo
+              const fullOldPath = fileService.getFullPath(doc.filePath);
+              const fileExists = await fs.promises.access(fullOldPath)
+                .then(() => true)
+                .catch(() => false);
+              
+              if (fileExists) {
+                // Mover o arquivo
+                await fileService.moveFile(doc.filePath, newFilePath);
+                
+                // Atualizar o caminho do arquivo no documento
+                await Document.findByIdAndUpdate(doc._id, {
+                  filePath: newFilePath,
+                  property: propertyExists.slug
+                });
+                
+                console.log(`Arquivo movido com sucesso: ${fileName}`);
+              } else {
+                console.log(`Arquivo não encontrado para mover: ${doc.filePath}`);
+              }
+            } catch (moveError: unknown) {
+              console.error(`Erro ao mover arquivo do documento ${doc._id}:`, moveError);
+              // Continuar para tentar mover os outros arquivos
+            }
+          }
+        }
+      } catch (dirError: unknown) {
+        console.error('Erro ao manipular diretórios da categoria:', dirError);
+        // Não retorna erro, apenas loga, para não interromper a atualização da categoria no banco
+      }
+    }
+
     const category = await Category.findByIdAndUpdate(
       req.params.id,
       { 
         name, 
-        slug, 
+        slug: newSlug, 
         description, 
         property: propertyExists.slug,
         order,
@@ -181,8 +271,10 @@ export const updateCategory: AnyRequestHandler = async (req, res, next) => {
       return res.status(404).json({ error: 'Categoria não encontrada' });
     }
 
+    console.log('Categoria atualizada com sucesso:', category._id);
     res.json(category);
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error('Erro não tratado ao atualizar categoria:', error);
     next(error);
   }
 };
@@ -224,16 +316,74 @@ export const updateCategoriesOrder: AnyRequestHandler = async (req, res, next) =
 // Delete a category
 export const deleteCategory: AnyRequestHandler = async (req, res, next) => {
   try {
-    const category = await Category.findByIdAndDelete(req.params.id);
+    console.log('Recebendo requisição para excluir categoria:', req.params.id);
+    
+    const category = await Category.findById(req.params.id);
     if (!category) {
+      console.error('Categoria não encontrada:', req.params.id);
       return res.status(404).json({ error: 'Categoria não encontrada' });
     }
     
-    // Here you would also delete all documents related to this category
-    // This would be implemented with additional logic or a service
+    // Find related documents
+    const documents = await Document.find({ category: category._id });
+    const documentsCount = documents.length;
     
-    res.json({ message: 'Categoria excluída com sucesso' });
-  } catch (error) {
+    console.log(`Encontrados ${documentsCount} documentos na categoria ${category.name}`);
+    
+    // Delete related documents and their files
+    if (documentsCount > 0) {
+      for (const doc of documents) {
+        try {
+          // Delete the file
+          await fileService.deleteFile(doc.filePath);
+          console.log(`Arquivo excluído: ${doc.filePath}`);
+          
+          // Delete the document record
+          await Document.findByIdAndDelete(doc._id);
+          console.log(`Registro do documento excluído: ${doc._id}`);
+        } catch (docError: unknown) {
+          console.error(`Erro ao excluir documento ${doc._id}:`, docError);
+          // Continue for other documents
+        }
+      }
+    }
+    
+    // Try to remove the category directory
+    try {
+      const categoryPath = path.join(fileService.getStoragePath(), category.property, category.slug);
+      console.log(`Tentando remover diretório da categoria: ${categoryPath}`);
+      
+      // Check if directory exists
+      const dirExists = await fs.promises.access(categoryPath)
+        .then(() => true)
+        .catch(() => false);
+      
+      if (dirExists) {
+        // Remove directory (only if empty - for safety)
+        try {
+          await fs.promises.rmdir(categoryPath);
+          console.log(`Diretório da categoria removido: ${categoryPath}`);
+        } catch (rmdirError: unknown) {
+          console.log(`Não foi possível remover diretório (possivelmente não vazio): ${categoryPath}`);
+        }
+      } else {
+        console.log(`Diretório da categoria não encontrado: ${categoryPath}`);
+      }
+    } catch (dirError: unknown) {
+      console.error('Erro ao tentar remover diretório da categoria:', dirError);
+      // Continue with deletion of category record
+    }
+    
+    // Now remove the category from the database
+    await Category.findByIdAndDelete(category._id);
+    console.log(`Categoria excluída com sucesso: ${category._id}`);
+    
+    res.json({ 
+      message: 'Categoria excluída com sucesso',
+      documentsRemoved: documentsCount
+    });
+  } catch (error: unknown) {
+    console.error('Erro não tratado ao excluir categoria:', error);
     next(error);
   }
-}; 
+};
