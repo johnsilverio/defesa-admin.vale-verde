@@ -9,6 +9,7 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ImportantDocumentsCarousel from '@/components/ImportantDocumentsCarousel';
 
 export default function HomePage() {
   const router = useRouter();
@@ -141,65 +142,19 @@ export default function HomePage() {
               <p className="section-subtitle">Acesse os principais documentos relacionados ao caso</p>
             </div>
             
-            <div className="document-grid">
-              <div className="document-card" data-category="defesa">
-                <h3>Defesa Administrativa Completa</h3>
-                <p>Documento completo da defesa administrativa apresentada à FUNAI.</p>
-                <Link 
-                  href="/documentos/defesa_administrativa_fazenda_brilhante.pdf" 
-                  className="btn btn-secondary w-full"
-                  download
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download
-                </Link>
-              </div>
-
-              <div className="document-card" data-category="matricula">
-                <h3>Matrícula Originária</h3>
-                <p>Matrícula originária da Fazenda Brilhante, comprovando a cadeia dominial.</p>
-                <Link 
-                  href="/documentos/matricula_originaria.pdf" 
-                  className="btn btn-secondary w-full"
-                  download
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download
-                </Link>
-              </div>
-
-              <div className="document-card" data-category="funai">
-                <h3>Ofício FUNAI</h3>
-                <p>Ofício da FUNAI notificando sobre os estudos demarcatórios.</p>
-                <Link 
-                  href="/documentos/oficio_funai.pdf" 
-                  className="btn btn-secondary w-full"
-                  download
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download
-                </Link>
-              </div>
-
-              <div className="document-card" data-category="processos">
-                <h3>Processos Judiciais</h3>
-                <p>Processos judiciais relacionados à questão indígena na região.</p>
-                <Link 
-                  href="/documentos" 
-                  className="btn btn-secondary w-full"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                  Ver todos
-                </Link>
-              </div>
+            {/* Carrossel de documentos importantes */}
+            <ImportantDocumentsCarousel />
+            
+            <div className="mt-8 text-center">
+              <Link 
+                href="/documentos" 
+                className="btn btn-primary inline-flex items-center"
+              >
+                Ver todos os documentos
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
             </div>
           </div>
         </section>

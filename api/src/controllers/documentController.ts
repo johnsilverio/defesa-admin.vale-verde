@@ -26,7 +26,7 @@ const documentSchema = z.object({
 // Get all documents (with optional filters)
 export const getAllDocuments: AnyRequestHandler = async (req, res, next) => {
   try {
-    const { category, property, search } = req.query;
+    const { category, property, search, isHighlighted } = req.query;
     
     let filter: any = {};
     
@@ -43,6 +43,11 @@ export const getAllDocuments: AnyRequestHandler = async (req, res, next) => {
         { title: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } }
       ];
+    }
+    
+    // Filtrar por documentos destacados/cruciais
+    if (isHighlighted !== undefined) {
+      filter.isHighlighted = isHighlighted === 'true';
     }
     
     const documents = await Document.find(filter)

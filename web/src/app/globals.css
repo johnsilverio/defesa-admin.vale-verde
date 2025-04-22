@@ -299,6 +299,16 @@ body {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
   }
   
+  /* Carousel styles */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
   .document-card {
     @apply bg-white rounded-lg shadow-sm p-6 transition-all duration-300 border border-gray-200;
     height: 100%;
