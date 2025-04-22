@@ -11,10 +11,14 @@ import { normalizeFileName } from '../utils/slugify';
 import { AnyRequestHandler } from '../types/express';
 import e from 'express'
 
-// Initialize file service
+/**
+ * Serviço para manipulação de arquivos
+ */
 const fileService = new FileService();
 
-// Validation schema for document creation/update
+/**
+ * Schema de validação para criação e atualização de documentos
+ */
 const documentSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
   description: z.string().optional(),
@@ -23,7 +27,15 @@ const documentSchema = z.object({
   isHighlighted: z.boolean().optional().default(false)
 });
 
-// Get all documents (with optional filters)
+/**
+ * Obtém todos os documentos com filtros opcionais
+ * @route GET /api/documents
+ * @param req.query.category - Filtro por categoria
+ * @param req.query.property - Filtro por propriedade
+ * @param req.query.search - Termo de busca para título ou descrição
+ * @param req.query.isHighlighted - Filtro para documentos destacados
+ * @returns Lista de documentos
+ */
 export const getAllDocuments: AnyRequestHandler = async (req, res, next) => {
   try {
     const { category, property, search, isHighlighted } = req.query;
@@ -39,13 +51,14 @@ export const getAllDocuments: AnyRequestHandler = async (req, res, next) => {
     }
     
     if (search) {
+      // Aplicar filtro de busca para título e descrição
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } }
       ];
     }
     
-    // Filtrar por documentos destacados/cruciais
+    // Aplicar filtro para documentos destacados/cruciais
     if (isHighlighted !== undefined) {
       filter.isHighlighted = isHighlighted === 'true';
     }
@@ -61,7 +74,12 @@ export const getAllDocuments: AnyRequestHandler = async (req, res, next) => {
   }
 };
 
-// Get a document by ID
+/**
+ * Obtém um documento pelo ID
+ * @route GET /api/documents/:id
+ * @param req.params.id - ID do documento
+ * @returns Documento solicitado
+ */
 export const getDocumentById: AnyRequestHandler = async (req, res, next) => {
   try {
     const document = await Document.findById(req.params.id)
@@ -78,7 +96,13 @@ export const getDocumentById: AnyRequestHandler = async (req, res, next) => {
   }
 };
 
-// Create a new document
+/**
+ * Cria um novo documento com upload de arquivo
+ * @route POST /api/documents
+ * @param req.body - Dados do documento (título, descrição, categoria, etc.)
+ * @param req.file - Arquivo enviado
+ * @returns Documento criado
+ */
 export const createDocument: AnyRequestHandler = async (req: Request & { file?: Express.Multer.File }, res, next) => {
   try {
     console.log('Recebendo requisição para criar documento:', { 
@@ -193,7 +217,14 @@ export const createDocument: AnyRequestHandler = async (req: Request & { file?: 
   }
 };
 
-// Update a document
+/**
+ * Atualiza um documento existente
+ * @route PUT /api/documents/:id
+ * @param req.params.id - ID do documento a ser atualizado
+ * @param req.body - Novos dados do documento
+ * @param req.file - Novo arquivo (opcional)
+ * @returns Documento atualizado
+ */
 export const updateDocument: AnyRequestHandler = async (req: Request & { file?: Express.Multer.File }, res, next) => {
   try {
     console.log('Recebendo requisição para atualizar documento:', { 
@@ -358,7 +389,12 @@ export const updateDocument: AnyRequestHandler = async (req: Request & { file?: 
   }
 };
 
-// Delete a document
+/**
+ * Remove um documento
+ * @route DELETE /api/documents/:id
+ * @param req.params.id - ID do documento a ser removido
+ * @returns Mensagem de confirmação
+ */
 export const deleteDocument: AnyRequestHandler = async (req, res, next) => {
   try {
     const document = await Document.findById(req.params.id);
@@ -378,7 +414,12 @@ export const deleteDocument: AnyRequestHandler = async (req, res, next) => {
   }
 };
 
-// Download a document
+/**
+ * Faz download de um documento
+ * @route GET /api/documents/:id/download
+ * @param req.params.id - ID do documento
+ * @returns Arquivo para download
+ */
 export const downloadDocument: AnyRequestHandler = async (req, res, next) => {
   try {
     const document = await Document.findById(req.params.id);

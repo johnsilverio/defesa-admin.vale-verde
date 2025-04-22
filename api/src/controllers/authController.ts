@@ -5,10 +5,17 @@ import { User, IUser } from '../models/user';
 import crypto from 'crypto';
 import { AnyRequestHandler } from '../types/express';
 
-// Lista local de refresh tokens (em produção, seria armazenada em banco de dados)
+/**
+ * Armazenamento temporário de refresh tokens
+ * @note Em ambiente de produção, estes tokens devem ser armazenados em banco de dados
+ */
 const refreshTokens: Map<string, { userId: string, expiresAt: Date }> = new Map();
 
-// Schemas de validação Zod para todas as operações
+/**
+ * Schemas de validação para operações de autenticação
+ */
+
+// Schema para registro de usuário
 const registerSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
@@ -22,12 +29,16 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Senha é obrigatória')
 });
 
-// Duração dos tokens
-const ACCESS_TOKEN_EXPIRY = '15m'; // 15 minutos para o token de acesso
-const REFRESH_TOKEN_EXPIRY = '7d'; // 7 dias para o refresh token
+/**
+ * Configuração de duração dos tokens
+ */
+const ACCESS_TOKEN_EXPIRY = '4h'; // Token de acesso válido por 4 horas
+const REFRESH_TOKEN_EXPIRY = '7d'; // Token de atualização válido por 7 dias
 
 /**
- * Gera um novo par de tokens (access token e refresh token)
+ * Gera um novo par de tokens de autenticação
+ * @param user - Objeto do usuário autenticado
+ * @returns Objeto contendo accessToken e refreshToken
  */
 const generateTokens = (user: IUser) => {
   const jwtSecret = process.env.JWT_SECRET;
@@ -62,7 +73,10 @@ const generateTokens = (user: IUser) => {
 };
 
 /**
- * Registra um novo usuário
+ * Registra um novo usuário no sistema
+ * @route POST /api/auth/register
+ * @param req.body - Dados do usuário (email, senha, nome, papel, propriedades)
+ * @returns Objeto com mensagem de sucesso e dados do usuário criado
  */
 export const register: AnyRequestHandler = async (req, res, next) => {
   try {
@@ -123,7 +137,10 @@ export const register: AnyRequestHandler = async (req, res, next) => {
 };
 
 /**
- * Realiza login de um usuário
+ * Autentica um usuário e gera tokens de acesso
+ * @route POST /api/auth/login
+ * @param req.body - Credenciais do usuário (email, senha)
+ * @returns Tokens de acesso e dados do usuário autenticado
  */
 export const login: AnyRequestHandler = async (req, res, next) => {
   try {
@@ -212,7 +229,10 @@ export const login: AnyRequestHandler = async (req, res, next) => {
 };
 
 /**
- * Renovação de token de acesso
+ * Renova o token de acesso usando um refresh token válido
+ * @route POST /api/auth/refresh
+ * @param req.body.refreshToken - Token de atualização
+ * @returns Novo token de acesso
  */
 export const refreshToken: AnyRequestHandler = async (req, res, next) => {
   try {
@@ -284,7 +304,10 @@ export const refreshToken: AnyRequestHandler = async (req, res, next) => {
 };
 
 /**
- * Obtém informações do usuário logado
+ * Retorna informações do usuário autenticado
+ * @route GET /api/auth/me
+ * @requires Autenticação
+ * @returns Dados do usuário atual
  */
 export const getCurrentUser: AnyRequestHandler = async (req, res, next) => {
   try {
@@ -310,7 +333,11 @@ export const getCurrentUser: AnyRequestHandler = async (req, res, next) => {
 };
 
 /**
- * Realiza logout de um usuário
+ * Invalida o refresh token do usuário, realizando o logout
+ * @route POST /api/auth/logout
+ * @requires Autenticação
+ * @param req.body.refreshToken - Token de atualização a ser invalidado
+ * @returns Mensagem de confirmação
  */
 export const logout: AnyRequestHandler = (req, res, next) => {
   try {
@@ -336,7 +363,10 @@ export const logout: AnyRequestHandler = (req, res, next) => {
 };
 
 /**
- * Lista todos os usuários (apenas para administradores)
+ * Lista todos os usuários cadastrados no sistema
+ * @route GET /api/auth/users
+ * @requires Autenticação de administrador
+ * @returns Lista de usuários
  */
 export const listUsers: AnyRequestHandler = async (req, res, next) => {
   try {
@@ -359,7 +389,7 @@ export const listUsers: AnyRequestHandler = async (req, res, next) => {
 };
 
 /**
- * Schema para atualização de usuário
+ * Schema de validação para atualização de usuário
  */
 const updateUserSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').optional(),
@@ -370,7 +400,12 @@ const updateUserSchema = z.object({
 });
 
 /**
- * Atualiza um usuário existente (apenas para administradores)
+ * Atualiza dados de um usuário existente
+ * @route PUT /api/auth/users/:id
+ * @requires Autenticação de administrador
+ * @param req.params.id - ID do usuário a ser atualizado
+ * @param req.body - Novos dados do usuário
+ * @returns Dados atualizados do usuário
  */
 export const updateUser: AnyRequestHandler = async (req, res, next) => {
   try {
@@ -448,7 +483,11 @@ export const updateUser: AnyRequestHandler = async (req, res, next) => {
 };
 
 /**
- * Exclui um usuário (apenas para administradores)
+ * Remove um usuário do sistema
+ * @route DELETE /api/auth/users/:id
+ * @requires Autenticação de administrador
+ * @param req.params.id - ID do usuário a ser removido
+ * @returns Mensagem de confirmação
  */
 export const deleteUser: AnyRequestHandler = async (req, res, next) => {
   try {

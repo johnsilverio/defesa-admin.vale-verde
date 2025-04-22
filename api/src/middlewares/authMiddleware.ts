@@ -12,10 +12,19 @@ interface DecodedToken {
   properties?: string[];
 }
 
-// Middleware to authenticate users
+/**
+ * Middleware para autenticação de usuários
+ * 
+ * Verifica o token JWT fornecido no cabeçalho Authorization ou em cookies
+ * e adiciona as informações do usuário ao objeto de requisição
+ * 
+ * @param req - Objeto de requisição Express
+ * @param res - Objeto de resposta Express
+ * @param next - Função para passar para o próximo middleware
+ */
 export const authMiddleware: AnyRequestHandler = async (req, res, next) => {
   try {
-    // Get token from Authorization header or cookies
+    // Obter token do cabeçalho Authorization ou de cookies
     const authHeader = req.headers.authorization;
     const tokenFromCookie = req.cookies?.authToken;
     
@@ -49,11 +58,11 @@ export const authMiddleware: AnyRequestHandler = async (req, res, next) => {
       });
     }
     
-    // Decode token
+    // Decodificar e verificar o token
     try {
       const decoded = jwt.verify(token, jwtSecret) as DecodedToken;
       
-      // Get user from database
+      // Buscar usuário no banco de dados
       const user = await User.findById(decoded.id).select('-password');
       if (!user) {
         return res.status(401).json({ 
@@ -62,7 +71,7 @@ export const authMiddleware: AnyRequestHandler = async (req, res, next) => {
         });
       }
       
-      // Add user to request object
+      // Adicionar usuário ao objeto de requisição
       req.user = user;
       
       // Log access attempt for audit (in production could use a logger)
@@ -95,7 +104,15 @@ export const authMiddleware: AnyRequestHandler = async (req, res, next) => {
   }
 };
 
-// Middleware to check if user is admin
+/**
+ * Middleware para verificar se o usuário é administrador
+ * 
+ * Deve ser usado após o middleware de autenticação
+ * 
+ * @param req - Objeto de requisição Express
+ * @param res - Objeto de resposta Express
+ * @param next - Função para passar para o próximo middleware
+ */
 export const adminMiddleware: AnyRequestHandler = (req, res, next) => {
   if (req.user?.role !== 'admin') {
     return res.status(403).json({ 
@@ -107,15 +124,20 @@ export const adminMiddleware: AnyRequestHandler = (req, res, next) => {
 };
 
 /**
- * Middleware for authentication using JWT
- * Alternative implementation that also checks for cookies
+ * Middleware para autenticação usando JWT.
+ * 
+ * Implementação alternativa que também verifica cookies.
+ * 
+ * @param req - Objeto de requisição Express.
+ * @param res - Objeto de resposta Express.
+ * @param next - Função para passar para o próximo middleware.
  */
 export const authenticate: AnyRequestHandler = (req, res, next) => {
-  // Get token from header or cookies
+  // Obter token do cabeçalho ou de cookies.
   const auth = req.headers.authorization;
   const tokenFromCookie = req.cookies?.authToken;
   
-  // If no token anywhere, return error
+  // Se não houver token, retornar erro.
   if ((!auth || !auth.startsWith('Bearer ')) && !tokenFromCookie) {
     res.status(401).json({ 
       error: 'Autenticação necessária', 
@@ -124,7 +146,7 @@ export const authenticate: AnyRequestHandler = (req, res, next) => {
     return;
   }
   
-  // Prioritize header token, but accept cookie as fallback
+  // Priorizar token do cabeçalho, mas aceitar cookie como fallback.
   const token = auth?.startsWith('Bearer ') 
     ? auth.split(' ')[1] 
     : tokenFromCookie;
@@ -137,7 +159,7 @@ export const authenticate: AnyRequestHandler = (req, res, next) => {
     return;
   }
 
-  // Get JWT secret, with safe fallback
+  // Obter segredo do JWT, com fallback seguro.
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) {
     console.error('SECURITY ALERT: JWT_SECRET not defined in environment!');
@@ -149,18 +171,18 @@ export const authenticate: AnyRequestHandler = (req, res, next) => {
   }
   
   try {
-    // Verify token
+    // Verificar token.
     const decoded = jwt.verify(token, jwtSecret);
     req.user = decoded as Express.Request['user'];
     
-    // Log access attempt for audit (in production could use a logger)
+    // Logar tentativa de acesso para auditoria (em produção, poderia usar um logger).
     if (process.env.NODE_ENV === 'production') {
       console.info(`Authenticated access: ${req.user?.email} (${req.user?.role}) - ${req.method} ${req.originalUrl}`);
     }
     
     next();
   } catch (error) {
-    // Specific handling for expired tokens
+    // Tratamento específico para tokens expirados.
     if (error instanceof TokenExpiredError) {
       res.status(401).json({ 
         error: 'Token expirado', 
@@ -170,7 +192,7 @@ export const authenticate: AnyRequestHandler = (req, res, next) => {
       return;
     }
     
-    // Other token errors
+    // Outros erros de token.
     res.status(401).json({ 
       error: 'Token inválido', 
       code: 'INVALID_TOKEN',
@@ -181,8 +203,13 @@ export const authenticate: AnyRequestHandler = (req, res, next) => {
 };
 
 /**
- * Middleware to check if user is an admin
- * Should be used after authenticate middleware
+ * Middleware para verificar se o usuário é administrador.
+ * 
+ * Deve ser usado após o middleware de autenticação.
+ * 
+ * @param req - Objeto de requisição Express.
+ * @param res - Objeto de resposta Express.
+ * @param next - Função para passar para o próximo middleware.
  */
 export const requireAdmin: AnyRequestHandler = (req, res, next) => {
   if (!req.user) {
@@ -194,7 +221,7 @@ export const requireAdmin: AnyRequestHandler = (req, res, next) => {
   }
   
   if (req.user.role !== 'admin') {
-    // Log unauthorized admin access attempt
+    // Logar tentativa de acesso não autorizada para administrador.
     console.warn(`Unauthorized admin access attempt: ${req.user?.email} - ${req.method} ${req.originalUrl}`);
     
     res.status(403).json({ 
@@ -208,14 +235,19 @@ export const requireAdmin: AnyRequestHandler = (req, res, next) => {
 };
 
 /**
- * Middleware to add CSRF token in all responses
- * to prevent CSRF (Cross-Site Request Forgery) attacks
+ * Middleware para adicionar token CSRF em todas as respostas.
+ * 
+ * Previne ataques CSRF (Cross-Site Request Forgery).
+ * 
+ * @param req - Objeto de requisição Express.
+ * @param res - Objeto de resposta Express.
+ * @param next - Função para passar para o próximo middleware.
  */
 export const csrfProtection: AnyRequestHandler = (req, res, next) => {
-  // Generate a unique CSRF token for this session
+  // Gerar um token CSRF único para esta sessão.
   const csrfToken = crypto.randomBytes(16).toString('hex');
   
-  // Store it in response variables to be sent
+  // Armazenar no objeto de resposta para ser enviado.
   res.locals.csrfToken = csrfToken;
   
   // Set a cookie with the token

@@ -1,7 +1,10 @@
 import mongoose, { Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-// Interface para o documento do usuário
+/**
+ * Interface que define a estrutura do documento de usuário
+ * @extends Document do Mongoose
+ */
 export interface IUser extends Document {
   _id: string;
   name: string;
@@ -42,7 +45,10 @@ const userSchema = new mongoose.Schema({
   }
 });
 
-// Hash password before saving
+/**
+ * Middleware executado antes de salvar o usuário
+ * Realiza o hash da senha se ela foi modificada
+ */
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
@@ -55,8 +61,12 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Method to compare password
-userSchema.methods.comparePassword = async function(candidatePassword: string) {
+/**
+ * Método para comparar a senha fornecida com a senha armazenada
+ * @param candidatePassword - Senha a ser verificada
+ * @returns Promise<boolean> - True se a senha estiver correta
+ */
+userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
 

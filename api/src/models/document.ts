@@ -1,5 +1,9 @@
 import mongoose, { Document as MongoDocument } from 'mongoose';
 
+/**
+ * Interface que define a estrutura do documento
+ * @extends MongoDocument do Mongoose
+ */
 export interface IDocument extends MongoDocument {
   _id: string;
   title: string;
@@ -17,6 +21,10 @@ export interface IDocument extends MongoDocument {
   updatedAt: Date;
 }
 
+/**
+ * Schema do Mongoose para documentos
+ * Define a estrutura dos documentos armazenados no banco de dados
+ */
 const documentSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -80,10 +88,17 @@ const documentSchema = new mongoose.Schema({
   }
 });
 
-// Update the updatedAt field on save
+/**
+ * Middleware executado antes de salvar o documento
+ * Atualiza o campo updatedAt com a data atual
+ */
 documentSchema.pre('save', function(next) {
   this.updatedAt = new Date();
   next();
 });
 
+/**
+ * Modelo de Documento
+ * Usado para realizar operações CRUD na coleção de documentos
+ */
 export const Document = mongoose.model<IDocument>('Document', documentSchema);
