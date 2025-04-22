@@ -80,13 +80,13 @@ export default function DocumentsPage() {
       setLoading(true);
       try {
         const [documentsRes, categoriesRes, propertiesRes] = await Promise.all([
-          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/documents`, {
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/categories`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/properties`, {
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/properties`, {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);
@@ -229,7 +229,7 @@ export default function DocumentsPage() {
     if (filters.category) queryParams.append('category', filters.category);
     if (filters.search) queryParams.append('search', filters.search);
     
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/documents?${queryParams.toString()}`, {
+    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/documents?${queryParams.toString()}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
@@ -255,7 +255,7 @@ export default function DocumentsPage() {
     // Load all documents
     if (token) {
       setLoading(true);
-      axios.get(`${process.env.NEXT_PUBLIC_API_URL}/documents`, {
+      axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => {
@@ -300,7 +300,7 @@ export default function DocumentsPage() {
       if (isEditing && selectedDocument) {
         // Update existing document
         await axios.put(
-          `${process.env.NEXT_PUBLIC_API_URL}/documents/${selectedDocument._id}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/documents/${selectedDocument._id}`,
           data,
           { 
             headers: { 
@@ -312,7 +312,7 @@ export default function DocumentsPage() {
       } else {
         // Create new document
         await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/documents`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/documents`,
           data,
           { 
             headers: { 
@@ -324,7 +324,7 @@ export default function DocumentsPage() {
       }
       
       // Refresh documents list
-      const { data: documentsData } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/documents`, {
+      const { data: documentsData } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -346,7 +346,7 @@ export default function DocumentsPage() {
     }
     
     try {
-      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/documents/${documentId}`, {
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/documents/${documentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -364,7 +364,7 @@ export default function DocumentsPage() {
     // Create a hidden anchor element
     const a = document.createElement('a');
     a.style.display = 'none';
-    a.href = `${process.env.NEXT_PUBLIC_API_URL}/documents/${documentId}/download`;
+    a.href = `${process.env.NEXT_PUBLIC_API_URL}/api/documents/${documentId}/download`;
     a.setAttribute('download', 'true');
     
     // Add authorization header
@@ -407,15 +407,15 @@ export default function DocumentsPage() {
         <div className="flex space-x-2">
           <Link 
             href="/admin/documentos/categorias" 
-            className="bg-[var(--primary)] hover:bg-[var(--primary-dark)] text-white px-4 py-2 rounded-md flex items-center transition-all shadow-md hover:shadow-lg"
+            className="admin-btn admin-btn-secondary"
           >
-            <FaFolder className="mr-2" /> Categorias
+            <FaFolder /> Categorias
           </Link>
           <button
             onClick={openCreateForm}
-            className="bg-[var(--accent)] hover:bg-[var(--accent-dark)] text-white px-4 py-2 rounded-md flex items-center transition-all shadow-md hover:shadow-lg"
+            className="admin-btn admin-btn-primary"
           >
-            <FaPlus className="mr-2" /> Novo Documento
+            <FaPlus /> Novo Documento
           </button>
         </div>
       </div>
@@ -498,13 +498,13 @@ export default function DocumentsPage() {
         <div className="flex justify-end mt-6 space-x-3">
           <button
             onClick={resetFilters}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors"
+            className="admin-btn admin-btn-outline"
           >
             Limpar
           </button>
           <button
             onClick={applyFilters}
-            className="px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 transition-colors"
+            className="admin-btn admin-btn-primary"
           >
             Aplicar Filtros
           </button>
@@ -614,32 +614,82 @@ export default function DocumentsPage() {
                 <label className="block text-gray-700 text-sm font-bold mb-2">
                   Arquivo {isEditing && '(deixe em branco para manter o arquivo atual)'}
                 </label>
-                <input
-                  type="file"
-                  name="file"
-                  onChange={handleFileChange}
-                  className="w-full px-3 py-2 border rounded"
-                  required={!isEditing}
-                />
-                
-                {isEditing && selectedDocument && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    Arquivo atual: {selectedDocument.originalFileName} ({formatFileSize(selectedDocument.fileSize)})
-                  </p>
-                )}
+                <div className="file-drop-zone" id="dropzone" 
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    const el = document.getElementById('dropzone');
+                    if (el) el.classList.add('dragging');
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    const el = document.getElementById('dropzone');
+                    if (el) el.classList.remove('dragging');
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const el = document.getElementById('dropzone');
+                    if (el) el.classList.remove('dragging');
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                      setFormData({
+                        ...formData,
+                        file: e.dataTransfer.files[0]
+                      });
+                    }
+                  }}
+                >
+                  <div className="file-input-container">
+                    <input
+                      type="file"
+                      name="file"
+                      onChange={handleFileChange}
+                      className="file-input"
+                      required={!isEditing}
+                    />
+                    <div className="file-input-button">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      {formData.file ? 'Arquivo selecionado' : 'Escolher arquivo ou arrastar aqui'}
+                    </div>
+                  </div>
+                  
+                  {formData.file && (
+                    <div className="file-info mt-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{formData.file.name} ({formatFileSize(formData.file.size)})</span>
+                    </div>
+                  )}
+                  
+                  {!formData.file && (
+                    <p className="mt-2 text-sm text-gray-500">
+                      {isEditing ? 'Arraste um novo arquivo ou clique para selecionar' : 'Arraste um arquivo ou clique para selecionar'}
+                    </p>
+                  )}
+                  
+                  {isEditing && selectedDocument && !formData.file && (
+                    <p className="text-sm text-gray-500 mt-2 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Arquivo atual: {selectedDocument.originalFileName} ({formatFileSize(selectedDocument.fileSize)})
+                    </p>
+                  )}
+                </div>
               </div>
               
               <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={closeForm}
-                  className="mr-3 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors"
+                  className="admin-btn admin-btn-outline mr-3"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-dark)] text-white rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 transition-colors"
+                  className="admin-btn admin-btn-primary"
                   disabled={filteredCategories.length === 0}
                 >
                   {isEditing ? 'Atualizar' : 'Criar'}

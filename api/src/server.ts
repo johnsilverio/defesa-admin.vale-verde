@@ -110,6 +110,16 @@ app.get('/', (req, res) => {
 
 // Middleware para rotas não encontradas
 app.use((req, res) => {
+  // Tratamento especial para rotas de API específicas que não são encontradas
+  const apiPaths = ['/documents', '/categories', '/properties'];
+  if (apiPaths.some(path => req.originalUrl.includes(path)) && req.method === 'GET') {
+    console.log(`Rota não encontrada: ${req.originalUrl}. Corrigindo para /api${req.originalUrl}`);
+    // Redirecionar para a versão com prefixo /api
+    if (!req.originalUrl.startsWith('/api')) {
+      return res.redirect(`/api${req.originalUrl}`);
+    }
+  }
+  
   res.status(404).json({
     error: 'Rota não encontrada',
     code: 'NOT_FOUND'

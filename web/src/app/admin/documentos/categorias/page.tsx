@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import Link from 'next/link';
 
 interface Category {
   _id: string;
@@ -48,10 +49,10 @@ export default function CategoriesPage() {
       setLoading(true);
       try {
         const [categoriesRes, propertiesRes] = await Promise.all([
-          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/categories`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/properties`, {
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/properties`, {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);
@@ -188,13 +189,20 @@ export default function CategoriesPage() {
   
   return (
     <div className="p-4">
+      <Link href="/admin/documentos" className="back-button">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Voltar para Documentos
+      </Link>
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Gerenciar Categorias</h1>
         <button
           onClick={openCreateForm}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center"
+          className="admin-btn admin-btn-primary"
         >
-          <FaPlus className="mr-2" /> Nova Categoria
+          <FaPlus /> Nova Categoria
         </button>
       </div>
       
@@ -207,9 +215,19 @@ export default function CategoriesPage() {
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">
-              {isEditing ? 'Editar Categoria' : 'Nova Categoria'}
-            </h2>
+            <div className="flex items-center justify-between mb-6 pb-3 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-[var(--primary-dark)]">
+                {isEditing ? 'Editar Categoria' : 'Nova Categoria'}
+              </h2>
+              <button
+                onClick={closeForm}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
@@ -259,17 +277,17 @@ export default function CategoriesPage() {
                 </select>
               </div>
               
-              <div className="flex justify-end">
+              <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={closeForm}
-                  className="mr-2 bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded"
+                  className="admin-btn admin-btn-outline mr-3"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                  className="admin-btn admin-btn-primary"
                 >
                   {isEditing ? 'Atualizar' : 'Criar'}
                 </button>
@@ -313,18 +331,22 @@ export default function CategoriesPage() {
                     {category.description || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <button
-                      onClick={() => openEditForm(category)}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(category._id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <FaTrash />
-                    </button>
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => openEditForm(category)}
+                        className="text-indigo-600 hover:text-indigo-900 transition-colors p-1 rounded-full hover:bg-indigo-50"
+                        title="Editar"
+                      >
+                        <FaEdit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(category._id)}
+                        className="text-red-600 hover:text-red-900 transition-colors p-1 rounded-full hover:bg-red-50"
+                        title="Excluir"
+                      >
+                        <FaTrash size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

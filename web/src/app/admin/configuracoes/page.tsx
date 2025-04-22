@@ -125,7 +125,7 @@ export default function ConfiguracoesPage() {
         <div className="bg-white shadow-md rounded-lg p-6 border border-gray-100">
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
-              <label className="block text-gray-700 text-sm font-bold mb-2 flex items-center" htmlFor="name">
+              <label className="text-gray-700 text-sm font-bold mb-2 flex items-center" htmlFor="name">
                 <FaUser className="mr-2 text-[var(--primary)]" /> Nome
               </label>
               <input
@@ -140,7 +140,7 @@ export default function ConfiguracoesPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-gray-700 text-sm font-bold mb-2 flex items-center" htmlFor="email">
+              <label className="text-gray-700 text-sm font-bold mb-2 flex items-center" htmlFor="email">
                 <FaEnvelope className="mr-2 text-[var(--primary)]" /> Email
               </label>
               <input
@@ -156,7 +156,7 @@ export default function ConfiguracoesPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-gray-700 text-sm font-bold mb-2 flex items-center" htmlFor="password">
+              <label className="text-gray-700 text-sm font-bold mb-2 flex items-center" htmlFor="password">
                 <FaLock className="mr-2 text-[var(--primary)]" /> Nova Senha
               </label>
               <input
@@ -171,7 +171,7 @@ export default function ConfiguracoesPage() {
             </div>
 
             <div className="mb-8">
-              <label className="block text-gray-700 text-sm font-bold mb-2 flex items-center" htmlFor="confirmPassword">
+              <label className="text-gray-700 text-sm font-bold mb-2 flex items-center" htmlFor="confirmPassword">
                 <FaLock className="mr-2 text-[var(--primary)]" /> Confirmar Nova Senha
               </label>
               <input

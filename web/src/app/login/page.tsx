@@ -104,14 +104,14 @@ export default function Login() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-[var(--primary-50)] relative overflow-hidden">
-      <div className="absolute inset-0 bg-[var(--primary)] opacity-5 z-0 hero-pattern"></div>
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gray-100 relative overflow-hidden">
+      <div className="absolute inset-0 z-0 pattern-dots pattern-slate-300 pattern-bg-white pattern-size-4 opacity-20"></div>
       
       <div className="relative z-10 w-full max-w-md px-6 py-10 mx-auto">
-        <div className="content-container bg-white shadow-lg p-8 rounded-lg border-0 animate-fadeIn">
+        <div className="admin-login-container">
           <div className="text-center">
-            <div className="flex justify-center mb-6">
-              <div className="relative h-20 w-56">
+            <div className="flex justify-center">
+              <div className="relative h-20 w-56 admin-login-logo">
                 <Image
                   src="/images/Logo_Vale_Verde.png"
                   alt="Logo Vale Verde"
@@ -123,8 +123,8 @@ export default function Login() {
                 />
               </div>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[var(--primary-dark)] mb-2">Área Restrita</h1>
-            <div className="h-1 w-20 bg-[var(--accent)] mx-auto my-3 rounded"></div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Área Restrita</h1>
+            <div className="admin-login-divider"></div>
             <p className="mt-2 text-sm text-gray-600 mb-6">
               Entre com suas credenciais para acessar o conteúdo
             </p>
@@ -132,7 +132,7 @@ export default function Login() {
 
           <div className="space-y-6">
             {(error || validationError) && (
-              <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-md animate-fadeIn">
+              <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded animate-fadeIn">
                 <p className="flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -158,7 +158,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-colors"
                   placeholder="seu@email.com"
                 />
               </div>
@@ -180,7 +180,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-colors"
                   placeholder="••••••••"
                 />
               </div>
@@ -191,7 +191,7 @@ export default function Login() {
                 type="button"
                 onClick={handleLogin}
                 disabled={isLoading}
-                className="btn btn-primary w-full py-3 text-base font-medium"
+                className="admin-btn admin-btn-primary w-full py-3"
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
@@ -203,17 +203,6 @@ export default function Login() {
                   </span>
                 ) : 'Entrar'}
               </button>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-200 pt-4 mt-6">
-            <div className="flex justify-center">
-              <a 
-                href="/"
-                className="text-sm text-[var(--primary)] hover:text-[var(--primary-light)] transition-colors"
-              >
-                Voltar ao site
-              </a>
             </div>
           </div>
         </div>

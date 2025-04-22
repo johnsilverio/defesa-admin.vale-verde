@@ -618,13 +618,32 @@ body {
   @apply bg-white p-6 rounded-lg shadow-sm border border-gray-200;
 }
 
+/* Botões padronizados para painel administrativo */
 .admin-btn {
-  @apply flex items-center justify-center px-4 py-2 rounded-md transition-colors;
+  @apply flex items-center justify-center px-4 py-2 rounded-md transition-all;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.admin-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.admin-btn:active {
+  transform: translateY(0);
+}
+
+.admin-btn svg {
+  @apply mr-2;
 }
 
 .admin-btn-primary {
   background-color: var(--primary);
   color: white !important;
+  border-color: var(--primary-dark);
 }
 
 .admin-btn-primary:hover {
@@ -633,23 +652,107 @@ body {
 }
 
 .admin-btn-secondary {
-  background-color: var(--gray-100);
-  color: var(--gray-700) !important;
+  background-color: white;
+  color: var(--primary) !important;
+  border-color: var(--primary);
 }
 
 .admin-btn-secondary:hover {
-  background-color: var(--gray-200);
-  color: var(--gray-900) !important;
+  background-color: var(--primary-50);
+  color: var(--primary-dark) !important;
+}
+
+.admin-btn-accent {
+  background-color: var(--primary-dark);
+  color: white !important;
+  border-color: var(--primary-dark);
+}
+
+.admin-btn-accent:hover {
+  background-color: var(--primary);
 }
 
 .admin-btn-danger {
   background-color: var(--error);
   color: white !important;
+  border-color: #b91c1c;
 }
 
 .admin-btn-danger:hover {
-  background-color: #c92430;
+  background-color: #b91c1c;
   color: white !important;
+}
+
+.admin-btn-outline {
+  background-color: white;
+  color: var(--gray-700) !important;
+  border-color: var(--gray-300);
+}
+
+.admin-btn-outline:hover {
+  background-color: var(--gray-50);
+  color: var(--gray-900) !important;
+  border-color: var(--gray-400);
+}
+
+/* Input de arquivo personalizado */
+.file-input-container {
+  @apply relative w-full;
+}
+
+.file-input {
+  @apply absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10;
+}
+
+.file-input-button {
+  @apply w-full px-4 py-3 bg-white border border-gray-300 rounded-md text-gray-700 font-medium flex items-center justify-center transition-all;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.file-input-button:hover {
+  @apply bg-gray-50 border-gray-400;
+}
+
+.file-input-button svg {
+  @apply mr-2 text-gray-500;
+}
+
+.file-input-container.has-file .file-input-button {
+  @apply bg-green-50 border-green-300 text-green-700;
+}
+
+.file-input-container.has-file .file-input-button svg {
+  @apply text-green-500;
+}
+
+.file-drop-zone {
+  @apply border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center text-center transition-all;
+  min-height: 150px;
+}
+
+.file-drop-zone.dragging {
+  @apply border-[var(--primary)] bg-[var(--primary-50)];
+}
+
+.file-drop-zone p {
+  @apply text-gray-500 mb-2;
+}
+
+.file-drop-zone .file-info {
+  @apply mt-3 text-sm text-gray-500 flex items-center;
+}
+
+.file-drop-zone .file-info svg {
+  @apply mr-1;
+}
+
+/* Navegação entre páginas */
+.back-button {
+  @apply inline-flex items-center text-gray-700 hover:text-[var(--primary)] transition-colors mb-4;
+}
+
+.back-button svg {
+  @apply mr-1 h-4 w-4;
 }
 
 /* Admin login page specific styling */

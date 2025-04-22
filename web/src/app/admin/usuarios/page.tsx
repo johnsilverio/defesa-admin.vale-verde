@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { FaEdit, FaTrash, FaUserPlus, FaCheck, FaTimes } from 'react-icons/fa';
+import Link from 'next/link';
 
 interface User {
   id: string;
@@ -209,6 +210,13 @@ export default function UsersPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <Link href="/admin" className="back-button">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Voltar para Dashboard
+      </Link>
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[var(--primary-dark)]">Gerenciamento de Usuários</h1>
@@ -216,9 +224,9 @@ export default function UsersPage() {
         </div>
         <button
           onClick={() => setModalType('create')}
-          className="bg-[var(--accent)] hover:bg-[var(--accent-dark)] text-white px-4 py-2 rounded-md flex items-center transition-all shadow-md hover:shadow-lg"
+          className="admin-btn admin-btn-primary"
         >
-          <FaUserPlus className="mr-2" /> Novo Usuário
+          <FaUserPlus /> Novo Usuário
         </button>
       </div>
 
@@ -418,16 +426,15 @@ export default function UsersPage() {
                 <button
                   type="button"
                   onClick={() => setModalType(null)}
-                  className="mr-3 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors"
+                  className="admin-btn admin-btn-outline mr-3"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-dark)] text-white rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 transition-colors"
-                  disabled={formData.role === 'user' && formData.properties.length === 0}
+                  className="admin-btn admin-btn-primary"
                 >
-                  {modalType === 'create' ? 'Criar' : 'Atualizar'}
+                  {modalType === 'create' ? 'Criar Usuário' : 'Atualizar'}
                 </button>
               </div>
             </form>
