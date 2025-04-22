@@ -157,7 +157,7 @@ export default function LinhaDoTempoPage() {
         <h2 className="text-center text-2xl font-bold text-[var(--dark-green)] mb-6">
           Contexto Histórico Regional
         </h2>
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="content-container mb-8">
           <p className="mb-4">
             A linha do tempo acima ilustra o contexto histórico da Fazenda Brilhante e sua relação com a questão indígena na região. 
             Os registros históricos documentam de forma clara a ocupação da área pela família proprietária ao longo de mais de um século, 

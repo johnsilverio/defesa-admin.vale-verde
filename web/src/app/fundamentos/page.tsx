@@ -9,7 +9,7 @@ export default function FundamentosPage() {
       title="Fundamentos Jurídicos"
       subtitle="Base legal da defesa administrativa"
     >
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="content-container mb-8">
         <h2 className="text-xl font-semibold text-[var(--dark-green)] mb-4">Fundamentos Constitucionais</h2>
         
         <p className="mb-4">
@@ -28,7 +28,7 @@ export default function FundamentosPage() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="content-container">
           <h2 className="text-xl font-semibold text-[var(--dark-green)] mb-4">Devido Processo Legal</h2>
           
           <p className="mb-4">
@@ -45,7 +45,7 @@ export default function FundamentosPage() {
           </p>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="content-container">
           <h2 className="text-xl font-semibold text-[var(--dark-green)] mb-4">Segurança Jurídica e Direito de Propriedade</h2>
           
           <p className="mb-4">

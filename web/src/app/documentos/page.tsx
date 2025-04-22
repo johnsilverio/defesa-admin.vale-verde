@@ -169,7 +169,7 @@ export default function DocumentosPage() {
                 {documentsByCategory[category].map((doc: Document) => (
                   <div 
                     key={doc.id} 
-                    className={`document-card ${doc.highlighted ? 'border-2 border-[var(--primary-green)]' : ''}`}
+                    className={`document-card ${doc.highlighted ? 'document-card-highlighted' : ''}`}
                     data-category={doc.category}
                   >
                     <h3>{doc.title}</h3>
@@ -179,7 +179,7 @@ export default function DocumentosPage() {
                     </p>
                     <a 
                       href={doc.url} 
-                      className={`btn ${doc.highlighted ? '' : 'btn-secondary'} w-full`}
+                      className={`btn ${doc.highlighted ? 'btn-primary' : 'btn-secondary'} w-full`}
                       download
                     >
                       Download
@@ -196,7 +196,7 @@ export default function DocumentosPage() {
           {filteredDocuments.map(doc => (
             <div 
               key={doc.id} 
-              className={`document-card ${doc.highlighted ? 'border-2 border-[var(--primary-green)]' : ''}`}
+              className={`document-card ${doc.highlighted ? 'document-card-highlighted' : ''}`}
               data-category={doc.category}
             >
               <h3>{doc.title}</h3>
@@ -206,7 +206,7 @@ export default function DocumentosPage() {
               </p>
               <a 
                 href={doc.url} 
-                className={`btn ${doc.highlighted ? '' : 'btn-secondary'} w-full`}
+                className={`btn ${doc.highlighted ? 'btn-primary' : 'btn-secondary'} w-full`}
                 download
               >
                 Download

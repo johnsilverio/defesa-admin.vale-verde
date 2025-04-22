@@ -9,7 +9,7 @@ export default function HistoricoPage() {
       title="Histórico da Propriedade"
       subtitle="Fazenda Brilhante e o contexto regional da questão indígena"
     >
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="content-container mb-8">
         <h2 className="text-xl font-semibold text-[var(--dark-green)] mb-4">Contexto Histórico</h2>
         
         <p className="mb-4">
@@ -34,7 +34,7 @@ export default function HistoricoPage() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="content-container">
           <h2 className="text-xl font-semibold text-[var(--dark-green)] mb-4">Ocupação Econômica</h2>
           
           <p className="mb-4">
@@ -52,7 +52,7 @@ export default function HistoricoPage() {
           </p>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="content-container">
           <h2 className="text-xl font-semibold text-[var(--dark-green)] mb-4">Regularidade Fundiária</h2>
           
           <p className="mb-4">

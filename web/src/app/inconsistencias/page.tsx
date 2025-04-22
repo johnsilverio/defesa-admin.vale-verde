@@ -14,7 +14,7 @@ export default function InconsistenciasPage() {
         </h2>
         
         <div className="grid gap-6 mb-12">
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="content-container">
             <h3 className="text-xl font-semibold text-[var(--dark-green)] mb-3">
               Ausência de Ocupação Tradicional
             </h3>
@@ -29,7 +29,7 @@ export default function InconsistenciasPage() {
             </p>
           </div>
           
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="content-container">
             <h3 className="text-xl font-semibold text-[var(--dark-green)] mb-3">
               Contradições em Estudos Recentes
             </h3>
@@ -45,7 +45,7 @@ export default function InconsistenciasPage() {
             </p>
           </div>
           
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="content-container">
             <h3 className="text-xl font-semibold text-[var(--dark-green)] mb-3">
               Desrespeito ao Marco Temporal
             </h3>
@@ -60,7 +60,7 @@ export default function InconsistenciasPage() {
             </p>
           </div>
           
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="content-container">
             <h3 className="text-xl font-semibold text-[var(--dark-green)] mb-3">
               Falhas Procedimentais
             </h3>
@@ -76,7 +76,7 @@ export default function InconsistenciasPage() {
             </p>
           </div>
           
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="content-container">
             <h3 className="text-xl font-semibold text-[var(--dark-green)] mb-3">
               Evidências Documentais Contrárias
             </h3>
@@ -98,7 +98,7 @@ export default function InconsistenciasPage() {
           Impacto das Inconsistências no Processo
         </h2>
         
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="content-container">
           <p className="mb-4">
             As inconsistências identificadas apontam para falhas significativas no processo que incluiu a Fazenda Brilhante 
             no perímetro reivindicado como terra indígena. Estas falhas não apenas comprometem a legitimidade técnica do 

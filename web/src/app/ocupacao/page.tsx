@@ -9,7 +9,7 @@ export default function OcupacaoPage() {
       title="Ocupação Histórica"
       subtitle="Documentação da história da ocupação da Fazenda Brilhante"
     >
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="content-container mb-8">
         <h2 className="text-2xl font-semibold text-[var(--dark-green)] mb-4 text-center">
           Cronologia da Ocupação
         </h2>
@@ -106,7 +106,7 @@ export default function OcupacaoPage() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="content-container">
           <h2 className="text-xl font-semibold text-[var(--dark-green)] mb-4">Documentação Comprobatória</h2>
           
           <ul className="list-disc pl-5 space-y-2">
@@ -121,7 +121,7 @@ export default function OcupacaoPage() {
           </ul>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="content-container">
           <h2 className="text-xl font-semibold text-[var(--dark-green)] mb-4">Evidências Históricas</h2>
           
           <ul className="list-disc pl-5 space-y-2">
