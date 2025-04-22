@@ -12,6 +12,7 @@ export interface IDocument extends MongoDocument {
   category: string;
   property: string;
   uploadedBy: string;
+  isHighlighted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,6 +65,10 @@ const documentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  isHighlighted: {
+    type: Boolean,
+    default: false
   },
   createdAt: {
     type: Date,

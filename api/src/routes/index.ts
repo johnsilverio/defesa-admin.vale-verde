@@ -28,6 +28,7 @@ router.get('/categories/:id', authMiddleware, categoryController.getCategoryById
 router.post('/categories', authMiddleware, adminMiddleware, categoryController.createCategory);
 router.put('/categories/:id', authMiddleware, adminMiddleware, categoryController.updateCategory);
 router.delete('/categories/:id', authMiddleware, adminMiddleware, categoryController.deleteCategory);
+router.put('/categories-order', authMiddleware, adminMiddleware, categoryController.updateCategoriesOrder);
 
 // Document routes
 router.get('/documents', authMiddleware, documentController.getAllDocuments);

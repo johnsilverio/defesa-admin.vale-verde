@@ -12,13 +12,21 @@ const categorySchema = z.object({
   property: z.string().min(1, 'Propriedade é obrigatória')
 });
 
+// Validation schema for order update
+const updateOrdersSchema = z.object({
+  categories: z.array(z.object({
+    _id: z.string(),
+    order: z.number()
+  }))
+});
+
 // Get all categories (optionally filtered by property)
 export const getAllCategories: AnyRequestHandler = async (req, res, next) => {
   try {
     const { property } = req.query;
     const filter = property ? { property: property as string } : {};
     
-    const categories = await Category.find(filter).sort({ name: 1 });
+    const categories = await Category.find(filter).sort({ order: 1, name: 1 });
     res.json(categories);
   } catch (error) {
     next(error);
@@ -77,11 +85,19 @@ export const createCategory: AnyRequestHandler = async (req, res, next) => {
       });
     }
 
+    // Get the highest order for this property to place the new category at the end
+    const highestOrder = await Category.findOne({ property: propertyExists.slug })
+      .sort({ order: -1 })
+      .select('order');
+
+    const nextOrder = highestOrder ? highestOrder.order + 1 : 0;
+
     const category = new Category({
       name,
       slug,
       description,
-      property: propertyExists.slug
+      property: propertyExists.slug,
+      order: nextOrder
     });
 
     await category.save();
@@ -131,6 +147,23 @@ export const updateCategory: AnyRequestHandler = async (req, res, next) => {
       });
     }
 
+    // Find the current category to get its order if the property is changing
+    const currentCategory = await Category.findById(req.params.id);
+    if (!currentCategory) {
+      return res.status(404).json({ error: 'Categoria não encontrada' });
+    }
+
+    // If property is changing, update order
+    let order = currentCategory.order;
+    if (currentCategory.property !== propertyExists.slug) {
+      // Get the highest order for the new property
+      const highestOrder = await Category.findOne({ property: propertyExists.slug })
+        .sort({ order: -1 })
+        .select('order');
+      
+      order = highestOrder ? highestOrder.order + 1 : 0;
+    }
+
     const category = await Category.findByIdAndUpdate(
       req.params.id,
       { 
@@ -138,6 +171,7 @@ export const updateCategory: AnyRequestHandler = async (req, res, next) => {
         slug, 
         description, 
         property: propertyExists.slug,
+        order,
         updatedAt: new Date() 
       },
       { new: true }
@@ -148,6 +182,40 @@ export const updateCategory: AnyRequestHandler = async (req, res, next) => {
     }
 
     res.json(category);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update categories orders
+export const updateCategoriesOrder: AnyRequestHandler = async (req, res, next) => {
+  try {
+    const parseResult = updateOrdersSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: parseResult.error.format()
+      });
+    }
+
+    const { categories } = parseResult.data;
+    
+    // Update each category's order in a transaction
+    const bulkOperations = categories.map(({ _id, order }) => ({
+      updateOne: {
+        filter: { _id },
+        update: { $set: { order, updatedAt: new Date() } }
+      }
+    }));
+
+    await Category.bulkWrite(bulkOperations);
+    
+    // Return updated categories
+    const updatedCategories = await Category.find({
+      _id: { $in: categories.map(cat => cat._id) }
+    }).sort({ order: 1 });
+    
+    res.json(updatedCategories);
   } catch (error) {
     next(error);
   }

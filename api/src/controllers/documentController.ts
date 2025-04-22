@@ -17,7 +17,8 @@ const documentSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
   description: z.string().optional(),
   category: z.string().min(1, 'Categoria é obrigatória'),
-  property: z.string().min(1, 'Propriedade é obrigatória')
+  property: z.string().min(1, 'Propriedade é obrigatória'),
+  isHighlighted: z.boolean().optional().default(false)
 });
 
 // Get all documents (with optional filters)
@@ -90,7 +91,7 @@ export const createDocument: AnyRequestHandler = async (req: Request & { file?: 
       });
     }
     
-    const { title, description, category, property } = parseResult.data;
+    const { title, description, category, property, isHighlighted } = parseResult.data;
     
     // Verify that the property exists
     const propertyExists = await Property.findOne({ 
@@ -135,7 +136,8 @@ export const createDocument: AnyRequestHandler = async (req: Request & { file?: 
       filePath,
       category: categoryExists._id,
       property: propertyExists.slug,
-      uploadedBy: req.user?._id
+      uploadedBy: req.user?._id,
+      isHighlighted: isHighlighted || false
     });
     
     await document.save();
@@ -158,7 +160,7 @@ export const updateDocument: AnyRequestHandler = async (req: Request & { file?: 
       });
     }
     
-    const { title, description, category, property } = parseResult.data;
+    const { title, description, category, property, isHighlighted } = parseResult.data;
     
     // Get the existing document
     const existingDocument = await Document.findById(req.params.id);
@@ -197,6 +199,7 @@ export const updateDocument: AnyRequestHandler = async (req: Request & { file?: 
       description,
       category: categoryExists._id,
       property: propertyExists.slug,
+      isHighlighted: isHighlighted || false,
       updatedAt: new Date()
     };
     

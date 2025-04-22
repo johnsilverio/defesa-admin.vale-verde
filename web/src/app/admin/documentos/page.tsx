@@ -27,6 +27,7 @@ interface Document {
     name: string;
     email: string;
   };
+  isHighlighted: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,6 +61,7 @@ export default function DocumentsPage() {
     description: '',
     category: '',
     property: '',
+    isHighlighted: false,
     file: null as File | null
   });
   
@@ -68,6 +70,8 @@ export default function DocumentsPage() {
     category: '',
     search: ''
   });
+  
+  const [isDragging, setIsDragging] = useState(false);
   
   const router = useRouter();
   const { token } = useAuth();
@@ -160,6 +164,7 @@ export default function DocumentsPage() {
       description: '',
       category: filteredCategories.length > 0 ? filteredCategories[0]._id : '',
       property: properties.length > 0 ? properties[0]._id : '',
+      isHighlighted: false,
       file: null
     });
     setSelectedDocument(null);
@@ -186,6 +191,7 @@ export default function DocumentsPage() {
       description: document.description || '',
       category: document.category._id,
       property: propertyObj._id,
+      isHighlighted: document.isHighlighted || false,
       file: null
     });
     
@@ -199,9 +205,11 @@ export default function DocumentsPage() {
   };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: value
     });
   };
   
@@ -210,6 +218,48 @@ export default function DocumentsPage() {
       setFormData({
         ...formData,
         file: e.target.files[0]
+      });
+    }
+  };
+  
+  const removeSelectedFile = () => {
+    setFormData({
+      ...formData,
+      file: null
+    });
+    
+    // Limpar o input de arquivo
+    const fileInput = document.getElementById('file-input') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
+  
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+  
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+  
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setFormData({
+        ...formData,
+        file: e.dataTransfer.files[0]
       });
     }
   };
@@ -292,6 +342,7 @@ export default function DocumentsPage() {
     data.append('description', formData.description);
     data.append('category', formData.category);
     data.append('property', formData.property);
+    data.append('isHighlighted', formData.isHighlighted.toString());
     if (formData.file) {
       data.append('file', formData.file);
     }
@@ -529,7 +580,7 @@ export default function DocumentsPage() {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="mb-4">
                 <label className="block text-gray-700 text-sm font-bold mb-2">
                   Título
@@ -539,7 +590,7 @@ export default function DocumentsPage() {
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   required
                 />
               </div>
@@ -552,7 +603,7 @@ export default function DocumentsPage() {
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   rows={3}
                 />
               </div>
@@ -565,10 +616,9 @@ export default function DocumentsPage() {
                   name="property"
                   value={formData.property}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   required
                 >
-                  <option value="">Selecione uma propriedade</option>
                   {properties.map(property => (
                     <option key={property._id} value={property._id}>
                       {property.name}
@@ -585,114 +635,148 @@ export default function DocumentsPage() {
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   required
-                  disabled={filteredCategories.length === 0}
                 >
-                  {filteredCategories.length === 0 ? (
-                    <option value="">Nenhuma categoria disponível para esta propriedade</option>
-                  ) : (
-                    <>
-                      <option value="">Selecione uma categoria</option>
-                      {filteredCategories.map(category => (
-                        <option key={category._id} value={category._id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </>
-                  )}
+                  {filteredCategories.map(category => (
+                    <option key={category._id} value={category._id}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
-                
-                {filteredCategories.length === 0 && (
-                  <p className="text-red-500 text-xs mt-1">
-                    Você precisa criar pelo menos uma categoria para esta propriedade primeiro.
-                  </p>
-                )}
+              </div>
+              
+              <div className="mb-4">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    name="isHighlighted"
+                    checked={formData.isHighlighted}
+                    onChange={handleInputChange}
+                    className="h-5 w-5 text-[var(--primary)] rounded focus:ring-[var(--primary)]"
+                  />
+                  <span className="text-gray-700 font-medium">Documento Crucial</span>
+                  <span className="bg-yellow-100 text-yellow-800 text-xs font-medium py-1 px-2 rounded-full">Destaque</span>
+                </label>
+                <p className="text-sm text-gray-500 mt-1 ml-7">
+                  Marque esta opção para destacar documentos essenciais na página inicial e na biblioteca de documentos
+                </p>
               </div>
               
               <div className="mb-4">
                 <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Arquivo {isEditing && '(deixe em branco para manter o arquivo atual)'}
+                  {isEditing ? 'Substituir arquivo (opcional)' : 'Arquivo'}
                 </label>
-                <div className="file-drop-zone" id="dropzone" 
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    const el = document.getElementById('dropzone');
-                    if (el) el.classList.add('dragging');
-                  }}
-                  onDragLeave={(e) => {
-                    e.preventDefault();
-                    const el = document.getElementById('dropzone');
-                    if (el) el.classList.remove('dragging');
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const el = document.getElementById('dropzone');
-                    if (el) el.classList.remove('dragging');
-                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                      setFormData({
-                        ...formData,
-                        file: e.dataTransfer.files[0]
-                      });
-                    }
-                  }}
+                
+                <div 
+                  className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
+                    isDragging 
+                      ? 'border-[var(--primary)] bg-[var(--primary-50)]' 
+                      : formData.file 
+                        ? 'border-green-300 bg-green-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                  onDragEnter={handleDragEnter}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                 >
-                  <div className="file-input-container">
-                    <input
-                      type="file"
-                      name="file"
-                      onChange={handleFileChange}
-                      className="file-input"
-                      required={!isEditing}
-                    />
-                    <div className="file-input-button">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                      {formData.file ? 'Arquivo selecionado' : 'Escolher arquivo ou arrastar aqui'}
-                    </div>
+                  <div className="flex flex-col items-center justify-center">
+                    {!formData.file ? (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p className="text-sm text-gray-500 mb-2">
+                          Arraste e solte um arquivo aqui, ou
+                        </p>
+                        <div className="relative">
+                          <input
+                            id="file-input"
+                            type="file"
+                            name="file"
+                            onChange={handleFileChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            required={!isEditing}
+                          />
+                          <button
+                            type="button"
+                            className="px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-dark)] transition-colors"
+                            onClick={() => document.getElementById('file-input')?.click()}
+                          >
+                            Escolher arquivo
+                          </button>
+                        </div>
+                        {isEditing && selectedDocument && (
+                          <p className="text-sm text-gray-500 mt-4">
+                            Arquivo atual: <span className="font-medium">{selectedDocument?.originalFileName}</span> ({formatFileSize(selectedDocument?.fileSize || 0)})
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <div className="w-full">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-semibold text-gray-700">Arquivo selecionado</h4>
+                          <button
+                            type="button"
+                            onClick={removeSelectedFile}
+                            className="text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="bg-white p-4 rounded border border-gray-200 flex items-start">
+                          <div className="rounded-md bg-blue-100 p-2 mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-medium text-gray-900 truncate">{formData.file.name}</h4>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formatFileSize(formData.file.size)} · {formData.file.type || 'Desconhecido'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex justify-center mt-3">
+                          <button
+                            type="button"
+                            className="text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] transition-colors"
+                            onClick={() => document.getElementById('file-input')?.click()}
+                          >
+                            Trocar arquivo
+                          </button>
+                          <input
+                            id="file-input"
+                            type="file"
+                            className="hidden"
+                            onChange={handleFileChange}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  
-                  {formData.file && (
-                    <div className="file-info mt-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>{formData.file.name} ({formatFileSize(formData.file.size)})</span>
-                    </div>
-                  )}
-                  
-                  {!formData.file && (
-                    <p className="mt-2 text-sm text-gray-500">
-                      {isEditing ? 'Arraste um novo arquivo ou clique para selecionar' : 'Arraste um arquivo ou clique para selecionar'}
-                    </p>
-                  )}
-                  
-                  {isEditing && selectedDocument && !formData.file && (
-                    <p className="text-sm text-gray-500 mt-2 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Arquivo atual: {selectedDocument.originalFileName} ({formatFileSize(selectedDocument.fileSize)})
-                    </p>
-                  )}
                 </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Formatos suportados: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG
+                </p>
               </div>
               
-              <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
+              <div className="flex justify-end pt-4 border-t border-gray-200 gap-3">
                 <button
                   type="button"
                   onClick={closeForm}
-                  className="admin-btn admin-btn-outline mr-3"
+                  className="admin-btn admin-btn-outline"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   className="admin-btn admin-btn-primary"
-                  disabled={filteredCategories.length === 0}
                 >
-                  {isEditing ? 'Atualizar' : 'Criar'}
+                  {isEditing ? 'Atualizar' : 'Salvar'}
                 </button>
               </div>
             </form>
@@ -701,105 +785,106 @@ export default function DocumentsPage() {
       )}
       
       {/* Documents List */}
-      {documents.length === 0 ? (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md shadow-sm">
-          <div className="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-sm text-yellow-700">
-              Nenhum documento encontrado. {categories.length === 0 ? 'Crie uma categoria antes de adicionar documentos.' : 'Adicione um novo documento para começar.'}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Título
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Categoria
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Propriedade
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Arquivo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tamanho
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ações
-                  </th>
+      <div className="bg-white rounded-lg shadow-md border border-gray-100">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Documento
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Categoria
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Propriedade
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Data
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {documents.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <p className="text-lg font-medium">Nenhum documento encontrado</p>
+                      <p className="text-sm">Clique em "Novo Documento" para adicionar o primeiro documento</p>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {documents.map(document => (
-                  <tr key={document._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{document.title}</div>
-                      {document.description && (
-                        <div className="text-sm text-gray-500 mt-1">{document.description}</div>
-                      )}
-                    </td>
+              ) : (
+                documents.map(doc => (
+                  <tr key={doc._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {document.category?.name || '-'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        {getPropertyName(document.property)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        {document.originalFileName}
+                      <div className="flex items-start">
+                        <div className="text-sm font-medium text-gray-900 mb-1">{doc.title}</div>
+                        <div>
+                          {doc.isHighlighted && (
+                            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium ml-2 py-0.5 px-2 rounded-full">
+                              Crucial
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500">{doc.description}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        <span className="font-medium">Arquivo:</span> {doc.originalFileName} ({formatFileSize(doc.fileSize)})
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatFileSize(document.fileSize)}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{doc.category?.name || '—'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex space-x-3">
+                      <div className="text-sm text-gray-900">{getPropertyName(doc.property)}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {new Date(doc.createdAt).toLocaleDateString('pt-BR')}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(doc.createdAt).toLocaleTimeString('pt-BR')}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex space-x-2">
                         <button
-                          onClick={() => downloadDocument(document._id)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded-full hover:bg-blue-50"
+                          onClick={() => downloadDocument(doc._id)}
+                          className="text-blue-600 hover:text-blue-900"
                           title="Download"
                         >
-                          <FaDownload size={16} />
+                          <FaDownload />
                         </button>
                         <button
-                          onClick={() => openEditForm(document)}
-                          className="text-indigo-600 hover:text-indigo-900 transition-colors p-1 rounded-full hover:bg-indigo-50"
+                          onClick={() => openEditForm(doc)}
+                          className="text-yellow-600 hover:text-yellow-900"
                           title="Editar"
                         >
-                          <FaEdit size={16} />
+                          <FaEdit />
                         </button>
-                        <button 
-                          onClick={() => handleDelete(document._id)}
-                          className="text-red-600 hover:text-red-900 transition-colors p-1 rounded-full hover:bg-red-50"
+                        <button
+                          onClick={() => handleDelete(doc._id)}
+                          className="text-red-600 hover:text-red-900"
                           title="Excluir"
                         >
-                          <FaTrash size={16} />
+                          <FaTrash />
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 } 

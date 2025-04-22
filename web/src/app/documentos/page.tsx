@@ -1,142 +1,181 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ContentPageLayout from '@/components/ContentPageLayout';
+import { apiRequest } from '@/utils/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Document {
-  id: number;
+  _id: string;
   title: string;
   description: string;
-  category: string;
-  highlighted: boolean;
-  url: string;
+  fileName: string;
+  originalFileName: string;
+  fileSize: number;
+  fileType: string;
+  filePath: string;
+  category: {
+    _id: string;
+    name: string;
+    slug: string;
+  };
+  property: string;
+  uploadedBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  isHighlighted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+  property: string;
+  order: number;
 }
 
 export default function DocumentosPage() {
   const [activeFilter, setActiveFilter] = useState('all');
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const { token, isAuthenticated } = useAuth();
+  
+  // Fetch documents from API
+  useEffect(() => {
+    setLoading(true);
+    const fetchData = async () => {
+      try {
+        if (!isAuthenticated) {
+          setError('Você precisa estar autenticado para visualizar documentos.');
+          setLoading(false);
+          return;
+        }
+        
+        const [docsResponse, categoriesResponse] = await Promise.all([
+          apiRequest<Document[]>('/api/documents'),
+          apiRequest<Category[]>('/api/categories')
+        ]);
+        
+        setDocuments(docsResponse);
+        
+        // Ordena as categorias pelo campo order e depois pelo nome
+        const sortedCategories = categoriesResponse.sort((a: Category, b: Category) => {
+          // Primeiro ordenamos pelo campo order
+          if (a.order !== b.order) {
+            return a.order - b.order;
+          }
+          // Se o order for igual, ordenamos pelo nome
+          return a.name.localeCompare(b.name);
+        });
+        
+        setCategories(sortedCategories);
+        setError('');
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        setError('Não foi possível carregar os documentos. Por favor, tente novamente mais tarde.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [isAuthenticated, token]);
 
-  const documentos: Document[] = [
-    {
-      id: 1,
-      title: 'Defesa Administrativa Completa',
-      description: 'Documento completo da defesa administrativa apresentada à FUNAI.',
-      category: 'defesa',
-      highlighted: false,
-      url: '/documentos/defesa_administrativa_fazenda_brilhante.pdf'
-    },
-    {
-      id: 2,
-      title: 'Estratégia de Defesa',
-      description: 'Documento detalhado com a estratégia completa para a defesa administrativa.',
-      category: 'defesa',
-      highlighted: false,
-      url: '/documentos/estrategia_defesa.pdf'
-    },
-    {
-      id: 3,
-      title: 'Análise de Inconsistências',
-      description: 'Documento focado nas inconsistências dos estudos antropológicos.',
-      category: 'defesa',
-      highlighted: false,
-      url: '/documentos/analise_inconsistencias.pdf'
-    },
-    {
-      id: 4,
-      title: 'Quadro Legal',
-      description: 'Análise do quadro legal aplicável ao caso.',
-      category: 'defesa',
-      highlighted: false,
-      url: '/documentos/quadro_legal.pdf'
-    },
-    {
-      id: 5,
-      title: 'Memo 549/DEID (Novembro de 2000)',
-      description: 'Memorando oficial da FUNAI que afirma explicitamente que "a comunidade Kaiwá do citado Tekohá São Lucas não está ocupando a área da qual teria sido expulsa há várias décadas".',
-      category: 'funai',
-      highlighted: true,
-      url: '/documentos/Memo_549-DEID.pdf'
-    },
-    {
-      id: 6,
-      title: 'Memo 580/DEID de 05.12.2000',
-      description: 'Memorando oficial da FUNAI que confirma o desconhecimento da existência de comunidade indígena na região em 2000 e menciona a "suposta ocupação" da Aldeia São Lucas.',
-      category: 'funai',
-      highlighted: true,
-      url: '/documentos/Memo_580-DEID_de_05.12.2000.pdf'
-    },
-    {
-      id: 7,
-      title: 'Ofício FUNAI',
-      description: 'Ofício Nº 349/2025/DPT/FUNAI notificando sobre os estudos demarcatórios.',
-      category: 'funai',
-      highlighted: false,
-      url: '/documentos/oficio_funai.pdf'
-    },
-    {
-      id: 8,
-      title: 'Matrícula Originária',
-      description: 'Matrícula originária da Fazenda Brilhante, comprovando a cadeia dominial.',
-      category: 'propriedade',
-      highlighted: false,
-      url: '/documentos/matricula_originaria.pdf'
-    },
-    {
-      id: 9,
-      title: 'Documento de Lideranças Indígenas (2004)',
-      description: 'Documento elaborado por lideranças indígenas em 2004 que lista terras reivindicadas, sem mencionar Santiago-Cuê ou São Lucas.',
-      category: 'indigenas',
-      highlighted: true,
-      url: '/documentos/Liderancas_Indigenas_2004.pdf'
-    },
-    {
-      id: 10,
-      title: 'Lei 6.001/73 - Estatuto do Índio',
-      description: 'Lei que regulamenta a situação jurídica dos indígenas no Brasil.',
-      category: 'legislacao',
-      highlighted: false,
-      url: '/documentos/estatuto_do_indio.pdf'
-    },
-    {
-      id: 11,
-      title: 'Ação Possessória - Processo nº 0001234-56.2023.8.12.0000',
-      description: 'Ação possessória relacionada à Fazenda Brilhante.',
-      category: 'processos',
-      highlighted: false,
-      url: '/documentos/acao_possessoria.pdf'
-    },
-    {
-      id: 12,
-      title: 'Sentença Judicial - Caso Takuara',
-      description: 'Sentença judicial relacionada ao caso de demarcação da Terra Indígena Takuara.',
-      category: 'processos',
-      highlighted: false,
-      url: '/documentos/sentenca_takuara.pdf'
-    },
-  ];
-
+  // Filter menu options based on available categories
   const filterCategories = [
     { id: 'all', name: 'Todos' },
-    { id: 'defesa', name: 'Defesa Administrativa' },
-    { id: 'funai', name: 'Documentos FUNAI' },
-    { id: 'processos', name: 'Processos Judiciais' },
-    { id: 'propriedade', name: 'Documentos da Propriedade' },
-    { id: 'legislacao', name: 'Legislação' },
-    { id: 'indigenas', name: 'Documentos Indígenas' },
+    ...categories.map(cat => ({ id: cat._id, name: cat.name }))
   ];
 
+  // Filter documents based on selected category
   const filteredDocuments = activeFilter === 'all' 
-    ? documentos 
-    : documentos.filter(doc => doc.category === activeFilter);
+    ? documents 
+    : documents.filter(doc => doc.category._id === activeFilter);
 
-  // Group documents by category for display
+  // Group documents by category
   const documentsByCategory: { [key: string]: Document[] } = {};
-  filteredDocuments.forEach(doc => {
-    if (!documentsByCategory[doc.category]) {
-      documentsByCategory[doc.category] = [];
-    }
-    documentsByCategory[doc.category].push(doc);
-  });
+  if (activeFilter === 'all') {
+    categories.forEach(category => {
+      documentsByCategory[category._id] = documents.filter(
+        doc => doc.category._id === category._id
+      );
+    });
+  } else {
+    documentsByCategory[activeFilter] = filteredDocuments;
+  }
+  
+  // Function to display a message when no documents are available
+  const renderEmptyState = () => (
+    <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        className="h-16 w-16 mx-auto text-gray-400 mb-4" 
+        fill="none" 
+        viewBox="0 0 24 24" 
+        stroke="currentColor"
+      >
+        <path 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={1.5} 
+          d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+        />
+      </svg>
+      <h3 className="text-xl font-bold text-gray-700 mb-2">Nenhum documento disponível</h3>
+      <p className="text-gray-600 mb-4">
+        Ainda não foram adicionados documentos a esta categoria.
+      </p>
+    </div>
+  );
+
+  if (!isAuthenticated) {
+    return (
+      <ContentPageLayout 
+        title="Biblioteca de Documentos"
+        subtitle="Acesse todos os documentos relacionados à defesa administrativa"
+      >
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded mb-6">
+          <p className="text-amber-700 font-medium">Você precisa estar logado para visualizar os documentos.</p>
+          <Link href="/login" className="inline-block mt-2 px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition-colors">
+            Fazer login
+          </Link>
+        </div>
+      </ContentPageLayout>
+    );
+  }
+
+  if (loading) {
+    return (
+      <ContentPageLayout 
+        title="Biblioteca de Documentos"
+        subtitle="Carregando documentos..."
+      >
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--primary)]"></div>
+        </div>
+      </ContentPageLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <ContentPageLayout 
+        title="Biblioteca de Documentos"
+        subtitle="Acesse todos os documentos relacionados à defesa administrativa da Fazenda Brilhante"
+      >
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-6">
+          <p className="text-red-700">{error}</p>
+        </div>
+      </ContentPageLayout>
+    );
+  }
 
   return (
     <ContentPageLayout
@@ -160,60 +199,71 @@ export default function DocumentosPage() {
 
       {activeFilter === 'all' ? (
         // Display by category when showing all
-        Object.keys(documentsByCategory).map(category => {
-          const categoryName = filterCategories.find(c => c.id === category)?.name || category;
+        Object.keys(documentsByCategory).map(categoryId => {
+          const categoryName = categories.find(c => c._id === categoryId)?.name || categoryId;
+          const categoryDocs = documentsByCategory[categoryId];
+          
           return (
-            <section key={category} className="mb-12">
+            <section key={categoryId} className="mb-12">
               <h2 className="section-title text-center">{categoryName}</h2>
-              <div className="document-grid">
-                {documentsByCategory[category].map((doc: Document) => (
-                  <div 
-                    key={doc.id} 
-                    className={`document-card ${doc.highlighted ? 'document-card-highlighted' : ''}`}
-                    data-category={doc.category}
-                  >
-                    <h3>{doc.title}</h3>
-                    <p>
-                      {doc.highlighted && <span className="font-bold text-[var(--primary-green)] block mb-1">DOCUMENTO CRUCIAL:</span>}
-                      {doc.description}
-                    </p>
-                    <a 
-                      href={doc.url} 
-                      className={`btn ${doc.highlighted ? 'btn-primary' : 'btn-secondary'} w-full`}
-                      download
+              
+              {categoryDocs.length === 0 ? (
+                renderEmptyState()
+              ) : (
+                <div className="document-grid">
+                  {categoryDocs.map((doc: Document) => (
+                    <div 
+                      key={doc._id} 
+                      className={`document-card ${doc.isHighlighted ? 'document-card-highlighted' : ''}`}
+                      data-category={doc.category.slug}
                     >
-                      Download
-                    </a>
-                  </div>
-                ))}
-              </div>
+                      <h3>{doc.title}</h3>
+                      <p>
+                        {doc.isHighlighted && <span className="font-bold text-[var(--primary-green)] block mb-1">DOCUMENTO CRUCIAL:</span>}
+                        {doc.description}
+                      </p>
+                      <a 
+                        href={`/api/documents/${doc._id}/download`} 
+                        className={`btn ${doc.isHighlighted ? 'btn-primary' : 'btn-secondary'} w-full`}
+                        download={doc.originalFileName}
+                      >
+                        Download
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
           );
         })
       ) : (
         // Display filtered results without category headers
-        <div className="document-grid">
-          {filteredDocuments.map(doc => (
-            <div 
-              key={doc.id} 
-              className={`document-card ${doc.highlighted ? 'document-card-highlighted' : ''}`}
-              data-category={doc.category}
-            >
-              <h3>{doc.title}</h3>
-              <p>
-                {doc.highlighted && <span className="font-bold text-[var(--primary-green)] block mb-1">DOCUMENTO CRUCIAL:</span>}
-                {doc.description}
-              </p>
-              <a 
-                href={doc.url} 
-                className={`btn ${doc.highlighted ? 'btn-primary' : 'btn-secondary'} w-full`}
-                download
+        filteredDocuments.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          <div className="document-grid">
+            {filteredDocuments.map(doc => (
+              <div 
+                key={doc._id} 
+                className={`document-card ${doc.isHighlighted ? 'document-card-highlighted' : ''}`}
+                data-category={doc.category.slug}
               >
-                Download
-              </a>
-            </div>
-          ))}
-        </div>
+                <h3>{doc.title}</h3>
+                <p>
+                  {doc.isHighlighted && <span className="font-bold text-[var(--primary-green)] block mb-1">DOCUMENTO CRUCIAL:</span>}
+                  {doc.description}
+                </p>
+                <a 
+                  href={`/api/documents/${doc._id}/download`} 
+                  className={`btn ${doc.isHighlighted ? 'btn-primary' : 'btn-secondary'} w-full`}
+                  download={doc.originalFileName}
+                >
+                  Download
+                </a>
+              </div>
+            ))}
+          </div>
+        )
       )}
     </ContentPageLayout>
   );

@@ -22,6 +22,18 @@ export default function AdminLogin() {
     }
   }, [user, router]);
 
+  // Verificar se o usuário foi redirecionado por expiração de sessão
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionExpired = urlParams.get('session_expired');
+      
+      if (sessionExpired === 'true') {
+        setError('Sua sessão expirou. Por favor, faça login novamente.');
+      }
+    }
+  }, []);
+
   // Função para validar inputs
   const validateInputs = () => {
     if (!email.trim()) {

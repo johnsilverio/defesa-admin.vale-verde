@@ -15,6 +15,7 @@ if (ENV === 'development' && typeof window !== 'undefined') {
 interface RequestOptions extends RequestInit {
   token?: string;
   data?: any;
+  retryCount?: number;
 }
 
 // Definindo tipos para as respostas da API para melhor type-safety
@@ -131,6 +132,7 @@ export async function refreshAccessToken(): Promise<string> {
   // Inicia um novo processo de refresh
   refreshTokenInProgress = (async () => {
     try {
+      console.log('Tentando renovar o token de acesso...');
       const refreshToken = localStorage.getItem('refresh_token');
       if (!refreshToken) {
         throw new Error('Refresh token não disponível');
@@ -146,6 +148,7 @@ export async function refreshAccessToken(): Promise<string> {
       });
       
       if (!response.ok) {
+        console.error('Falha na resposta do servidor ao renovar token:', response.status, response.statusText);
         // Se o refresh falhar, limpamos os dados de autenticação
         clearAuthData();
         throw new Error('Falha ao atualizar o token');
@@ -153,8 +156,19 @@ export async function refreshAccessToken(): Promise<string> {
       
       const data: RefreshResponse = await response.json();
       
+      if (!data.accessToken) {
+        console.error('Resposta de renovação de token inválida:', data);
+        clearAuthData();
+        throw new Error('Resposta inválida do servidor ao renovar token');
+      }
+      
+      console.log('Token renovado com sucesso');
+      
       // Salvamos o novo access token em memória
       inMemoryToken = data.accessToken;
+      
+      // Salvamos no localStorage também para persistência entre recarregamentos
+      localStorage.setItem('auth_token', data.accessToken);
       
       // Atualizamos o refresh token se vier na resposta
       if (data.refreshToken) {
@@ -163,11 +177,14 @@ export async function refreshAccessToken(): Promise<string> {
       
       return data.accessToken;
     } catch (error) {
+      console.error('Erro ao renovar token:', error);
       clearAuthData();
       throw error;
     } finally {
-      // Limpa a referência para permitir novas tentativas
-      refreshTokenInProgress = null;
+      // Limpa a referência para permitir novas tentativas após um timeout
+      setTimeout(() => {
+        refreshTokenInProgress = null;
+      }, 1000); // Previne múltiplas tentativas em um curto período
     }
   })();
   
@@ -180,6 +197,8 @@ export async function refreshAccessToken(): Promise<string> {
 export async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   // Determina se estamos no cliente ou no servidor
   const isClient = typeof window !== 'undefined';
+  let retryCount = options.retryCount || 0;
+  const MAX_RETRIES = 2;
   
   // Obtém o token atual (da memória ou do localStorage)
   let token = options.token || getToken();
@@ -190,8 +209,8 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       // Tenta atualizar o token
       token = await refreshAccessToken();
     } catch (refreshError) {
-      // Se falhar na atualização, redireciona para login
-      if (typeof window !== 'undefined') {
+      // Se falhar na atualização, redireciona para login se for uma rota protegida
+      if (typeof window !== 'undefined' && endpoint.includes('/api/auth')) {
         // Verifica se estamos na área de admin para redirecionar para o login correto
         const isAdminPath = window.location.pathname.startsWith('/admin');
         window.location.href = isAdminPath ? '/admin/login' : '/login';
@@ -228,6 +247,36 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       body,
       credentials: 'include', // Para enviar/receber cookies
     });
+    
+    // Se recebemos erro 401 e temos refresh token, tentamos renovar o token e refazer a requisição
+    if (response.status === 401 && isClient && localStorage.getItem('refresh_token') && retryCount < MAX_RETRIES) {
+      try {
+        // Tenta renovar o token apenas se não for uma tentativa de login/refresh
+        if (!endpoint.includes('/api/auth/refresh') && !endpoint.includes('/api/auth/login')) {
+          console.log(`Recebido erro 401, tentando renovar o token (tentativa ${retryCount + 1}/${MAX_RETRIES})...`);
+          const newToken = await refreshAccessToken();
+          
+          // Refaz a requisição com o novo token e incrementa o contador de tentativas
+          return apiRequest<T>(endpoint, { 
+            ...options, 
+            token: newToken,
+            retryCount: retryCount + 1
+          });
+        }
+      } catch (retryError) {
+        console.error('Falha ao renovar o token após erro 401:', retryError);
+        // Se falhar o retry, continuamos com o fluxo normal
+        
+        if (typeof window !== 'undefined') {
+          // Verifica se estamos na área de admin para redirecionar para o login correto
+          const isAdminPath = window.location.pathname.startsWith('/admin');
+          if (isAdminPath) {
+            console.log('Redirecionando para página de login admin após falha de autenticação');
+            window.location.href = '/admin/login?session_expired=true';
+          }
+        }
+      }
+    }
     
     // Verifica o content-type da resposta
     const contentType = response.headers.get('content-type');

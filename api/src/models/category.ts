@@ -6,6 +6,7 @@ export interface ICategory extends Document {
   slug: string;
   description?: string;
   property: string;
+  order: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +32,10 @@ const categorySchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
+  },
+  order: {
+    type: Number,
+    default: 9999 // Default to a high number so new categories appear at the end
   },
   createdAt: {
     type: Date,
