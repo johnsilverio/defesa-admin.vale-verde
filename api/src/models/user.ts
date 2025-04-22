@@ -1,38 +1,63 @@
-export interface User {
-  id: number;
+import mongoose, { Document } from 'mongoose';
+import bcrypt from 'bcryptjs';
+
+// Interface para o documento do usuário
+export interface IUser extends Document {
+  _id: string;
+  name: string;
   email: string;
-  password: string; // hash
-  name?: string;
+  password: string;
   role: 'user' | 'admin';
-  properties?: string[]; // IDs ou nomes das propriedades associadas ao usuário
+  properties: string[];
+  createdAt: Date;
+  comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-export const users: User[] = [
-  // Usuário admin - Paulo Martins
-  { 
-    id: 1, 
-    email: 'paulo.martins@valeverdeambiental.com.br', 
-    password: '@valeverde2025',
-    name: 'Paulo Martins',
-    role: 'admin',
-    properties: ['todas'] // Admin tem acesso a todas as propriedades
+const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
   },
-  // Usuário admin - Desenvolvimento
-  { 
-    id: 2, 
-    email: 'desenvolvimento@valeverdeambiental.com.br', 
-    password: '@valeverde123',
-    name: 'Desenvolvimento Vale Verde',
-    role: 'admin',
-    properties: ['todas'] // Admin tem acesso a todas as propriedades
+  email: {
+    type: String,
+    required: true,
+    unique: true
   },
-  // Usuário comum para teste
-  {
-    id: 3,
-    email: 'user@example.com',
-    password: 'user123', // Em produção, usar hash bcrypt
-    name: 'John',
-    role: 'user',
-    properties: ['fazenda-brilhante'] // Usuário tem acesso apenas à Fazenda Brilhante
+  password: {
+    type: String,
+    required: true
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  },
+  properties: {
+    type: [String],
+    default: ['fazenda-brilhante'] // Por padrão, todos os usuários têm acesso à Fazenda Brilhante
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
-];
+});
+
+// Hash password before saving
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
+// Method to compare password
+userSchema.methods.comparePassword = async function(candidatePassword: string) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+export const User = mongoose.model<IUser>('User', userSchema);

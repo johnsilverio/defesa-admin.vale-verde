@@ -92,32 +92,33 @@ export default function Login() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-[var(--background-light)]">
-      <div className="relative w-full max-w-md overflow-hidden">
-        <div className="absolute inset-0 bg-[var(--primary-green)] opacity-5 z-0"></div>
-        
-        <div className="relative z-10 p-8 space-y-6 bg-white rounded-lg shadow-lg border border-gray-100">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-[var(--primary-50)] relative overflow-hidden">
+      <div className="absolute inset-0 bg-[var(--primary)] opacity-5 z-0 hero-pattern"></div>
+      
+      <div className="relative z-10 w-full max-w-md px-6 py-10 mx-auto">
+        <div className="content-container bg-white shadow-lg p-8 rounded-lg border-0 animate-fadeIn">
           <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="relative h-20 w-48">
+            <div className="flex justify-center mb-6">
+              <div className="relative h-20 w-56">
                 <Image
                   src="/images/Logo_Vale_Verde.png"
                   alt="Logo Vale Verde"
                   fill
-                  sizes="(max-width: 768px) 100vw, 192px"
+                  sizes="(max-width: 768px) 100vw, 224px"
                   style={{ objectFit: 'contain' }}
                   priority
                   className="animate-fadeIn"
                 />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-[var(--dark-green)]">Área Restrita</h1>
-            <p className="mt-2 text-sm text-gray-600">
+            <h1 className="text-2xl md:text-3xl font-bold text-[var(--primary-dark)] mb-2">Área Restrita</h1>
+            <div className="h-1 w-20 bg-[var(--accent)] mx-auto my-3 rounded"></div>
+            <p className="mt-2 text-sm text-gray-600 mb-6">
               Entre com suas credenciais para acessar o conteúdo
             </p>
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-6">
             {(error || validationError) && (
               <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-md animate-fadeIn">
                 <p className="flex items-center">
@@ -145,7 +146,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary-green)] focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors"
                   placeholder="seu@email.com"
                 />
               </div>
@@ -167,7 +168,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary-green)] focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors"
                   placeholder="••••••••"
                 />
               </div>
@@ -178,11 +179,11 @@ export default function Login() {
                 type="button"
                 onClick={handleLogin}
                 disabled={isLoading}
-                className="w-full py-2.5 px-4 border border-transparent rounded-md shadow-sm text-white bg-[var(--primary-green)] hover:bg-[var(--dark-green)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-green)] transition-colors duration-200 font-medium"
+                className="btn btn-primary w-full py-3 text-base font-medium"
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -192,8 +193,17 @@ export default function Login() {
               </button>
             </div>
           </div>
-
-          {/* Seção de credenciais removida conforme solicitado */}
+          
+          <div className="border-t border-gray-200 pt-4 mt-6">
+            <div className="flex justify-center">
+              <a 
+                href="/"
+                className="text-sm text-[var(--primary)] hover:text-[var(--primary-light)] transition-colors"
+              >
+                Voltar ao site
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </main>

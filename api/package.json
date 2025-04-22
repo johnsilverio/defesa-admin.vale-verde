@@ -16,14 +16,17 @@
     "lint": "eslint . --ext .ts",
     "prod:setup": "npm run build:prod && npm run create-env:prod",
     "dev:setup": "npm run create-env:dev",
-    "create-env:dev": "node -e \"require('fs').writeFileSync('.env', 'NODE_ENV=development\\nJWT_SECRET=defesa_admin_desenvolvimento_segredo_secreto\\nPORT=4000\\nCORS_ORIGIN=http://localhost:3000\\nSTORAGE_PATH=./uploads\\nDISABLE_RATE_LIMITS=true')\"",
-    "create-env:prod": "node -e \"require('fs').writeFileSync('.env', 'NODE_ENV=production\\nJWT_SECRET='+require('crypto').randomBytes(32).toString('hex')+'\\nPORT=4000\\nCORS_ORIGIN=https://seu-site-de-producao.com\\nSTORAGE_PATH=./uploads\\nDISABLE_RATE_LIMITS=false')\""
+    "create-env:dev": "node -e \"require('fs').writeFileSync('.env', 'NODE_ENV=development\\nJWT_SECRET=defesa_admin_desenvolvimento_segredo_secreto\\nPORT=4000\\nCORS_ORIGIN=http://localhost:3000\\nSTORAGE_PATH=./uploads\\nDISABLE_RATE_LIMITS=true\\nMONGODB_URI=mongodb://localhost:27017/defesa-admin')\"",
+    "create-env:prod": "node -e \"require('fs').writeFileSync('.env', 'NODE_ENV=production\\nJWT_SECRET='+require('crypto').randomBytes(32).toString('hex')+'\\nPORT=4000\\nCORS_ORIGIN=https://seu-site-de-producao.com\\nSTORAGE_PATH=./uploads\\nDISABLE_RATE_LIMITS=false\\nMONGODB_URI=mongodb://localhost:27017/defesa-admin')\"",
+    "init-db": "ts-node src/scripts/init-db.ts",
+    "init-admin": "cross-env NODE_ENV=development ts-node src/db/init-admin.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@types/mongoose": "^5.11.96",
     "@types/node": "^22.14.1",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
@@ -32,6 +35,7 @@
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.13.2",
     "multer": "^1.4.5-lts.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",

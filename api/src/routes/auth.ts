@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { login, register, refreshAccessToken, logout } from '../controllers/authController';
+import { login, register, refreshAccessToken, logout, listUsers } from '../controllers/authController';
 import { authenticate, requireAdmin, csrfProtection } from '../middleware/auth';
-import { users, User } from '../models/user';
+import { User } from '../models/user';
 
 const router = Router();
 
@@ -39,17 +39,7 @@ router.get('/validate', authenticate, (req, res) => {
 });
 
 // Rota protegida de administrador - listar usuários
-router.get('/users', authenticate, requireAdmin, (req, res) => {
-  // Na implementação real, você buscaria os usuários do banco de dados
-  const usersList = users.map((user: User) => ({
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role
-  }));
-  
-  res.json({ users: usersList });
-});
+router.get('/users', authenticate, requireAdmin, listUsers);
 
 // Rota para verificar se o usuário é administrador
 router.get('/admin-check', authenticate, requireAdmin, (req, res) => {

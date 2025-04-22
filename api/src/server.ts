@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
+import mongoose from 'mongoose';
 import routes from './routes';
 
 // Carregar variáveis de ambiente
@@ -114,13 +115,27 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 // Adicionar o middleware de tratamento de erros
 app.use(errorHandler);
 
+// Conectar ao MongoDB
+const connectDB = async () => {
+  try {
+    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/defesa-admin';
+    await mongoose.connect(mongoURI);
+    console.log('MongoDB conectado com sucesso');
+  } catch (error) {
+    console.error('Erro ao conectar ao MongoDB:', error);
+    process.exit(1);
+  }
+};
+
 // Iniciar o servidor
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`API rodando na porta ${PORT}`);
-  console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`CORS permitido para: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
-  if (DISABLE_RATE_LIMITS) {
-    console.log('⚠️ Rate limiting desativado');
-  }
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`API rodando na porta ${PORT}`);
+    console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`CORS permitido para: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
+    if (DISABLE_RATE_LIMITS) {
+      console.log('⚠️ Rate limiting desativado');
+    }
+  });
 });

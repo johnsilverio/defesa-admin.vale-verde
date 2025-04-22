@@ -1,19 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { users, User } from '../models/user';
+import { User, IUser } from '../models/user';
 import crypto from 'crypto';
 
 // Lista local de refresh tokens (em produção, seria armazenada em banco de dados)
-const refreshTokens: Map<string, { userId: number, expiresAt: Date }> = new Map();
+const refreshTokens: Map<string, { userId: string, expiresAt: Date }> = new Map();
 
 // Schemas de validação Zod para todas as operações
 const registerSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
-  name: z.string().optional(),
-  role: z.enum(['user', 'admin']).optional()
+  name: z.string().min(1, 'Nome é obrigatório'),
+  role: z.enum(['user', 'admin']).optional(),
+  properties: z.array(z.string()).optional()
 });
 
 const loginSchema = z.object({
@@ -26,28 +26,17 @@ const ACCESS_TOKEN_EXPIRY = '15m'; // 15 minutos para o token de acesso
 const REFRESH_TOKEN_EXPIRY = '7d'; // 7 dias para o refresh token
 
 /**
- * Tipo personalizado para handlers de requisição com suporte adequado a tipagem 
- */
-type CustomRequestHandler = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => Promise<void> | void;
-
-/**
  * Gera um novo par de tokens (access token e refresh token)
  */
-const generateTokens = (user: User) => {
-  // Verifica se a chave JWT está definida
+const generateTokens = (user: IUser) => {
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) {
     throw new Error('JWT_SECRET não está definido');
   }
   
-  // Gera access token com prazo curto
   const accessToken = jwt.sign(
     { 
-      id: user.id, 
+      id: user._id, 
       email: user.email,
       role: user.role,
       name: user.name
@@ -56,16 +45,13 @@ const generateTokens = (user: User) => {
     { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
   
-  // Gera refresh token com prazo mais longo
   const refreshToken = crypto.randomBytes(40).toString('hex');
   
-  // Calcula data de expiração do refresh token
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7); // 7 dias
+  expiresAt.setDate(expiresAt.getDate() + 7);
   
-  // Armazena refresh token (em produção seria no banco de dados)
   refreshTokens.set(refreshToken, {
-    userId: user.id,
+    userId: user._id.toString(),
     expiresAt
   });
   
@@ -75,9 +61,8 @@ const generateTokens = (user: User) => {
 /**
  * Registra um novo usuário
  */
-export const register: CustomRequestHandler = async (req, res, next) => {
+export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Valida os dados de entrada
     const parseResult = registerSchema.safeParse(req.body);
     if (!parseResult.success) {
       res.status(400).json({ 
@@ -87,10 +72,11 @@ export const register: CustomRequestHandler = async (req, res, next) => {
       return;
     }
     
-    const { email, password, name, role = 'user' } = parseResult.data;
+    const { email, password, name, role = 'user', properties = [] } = parseResult.data;
     
     // Verifica se o usuário já existe
-    if (users.find(u => u.email === email)) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       res.status(409).json({ 
         error: 'Usuário já existe',
         code: 'USER_EXISTS'
@@ -98,29 +84,34 @@ export const register: CustomRequestHandler = async (req, res, next) => {
       return;
     }
     
-    // Criptografa a senha
-    const hash = await bcrypt.hash(password, 12); // Usando fator 12 para maior segurança
+    // Se o role for 'user', assegure que tenha pelo menos uma propriedade associada
+    // Se não tiver nenhuma propriedade especificada, associe à 'fazenda-brilhante' por padrão
+    const userProperties = role === 'user' && properties.length === 0 
+      ? ['fazenda-brilhante'] 
+      : properties;
+    
+    // Se for admin, não precisa ter propriedades associadas
+    const finalProperties = role === 'admin' ? [] : userProperties;
     
     // Cria o novo usuário
-    const newUser: User = { 
-      id: users.length + 1, 
-      email, 
-      password: hash,
+    const newUser = new User({
+      email,
+      password,
       name,
-      role
-    };
+      role,
+      properties: finalProperties
+    });
     
-    // Adiciona o usuário (em produção, seria salvo no banco de dados)
-    users.push(newUser);
+    await newUser.save();
     
-    // Responde com sucesso
     res.status(201).json({ 
       message: 'Usuário registrado com sucesso',
       user: {
-        id: newUser.id,
+        id: newUser._id,
         email: newUser.email,
         name: newUser.name,
-        role: newUser.role
+        role: newUser.role,
+        properties: newUser.properties
       }
     });
   } catch (error) {
@@ -131,9 +122,8 @@ export const register: CustomRequestHandler = async (req, res, next) => {
 /**
  * Realiza login de um usuário
  */
-export const login: CustomRequestHandler = async (req, res, next) => {
+export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Valida os dados de entrada
     const parseResult = loginSchema.safeParse(req.body);
     if (!parseResult.success) {
       res.status(400).json({ 
@@ -146,7 +136,7 @@ export const login: CustomRequestHandler = async (req, res, next) => {
     const { email, password } = parseResult.data;
     
     // Busca o usuário
-    const user = users.find(u => u.email === email);
+    const user = await User.findOne({ email });
     if (!user) {
       res.status(401).json({ 
         error: 'Credenciais inválidas',
@@ -155,22 +145,8 @@ export const login: CustomRequestHandler = async (req, res, next) => {
       return;
     }
     
-    let passwordValid = false;
-    
-    // Ambiente de desenvolvimento - permite senhas em texto puro para facilitar testes
-    if (process.env.NODE_ENV !== 'production') {
-      // Verifica se a senha é igual (para ambiente de desenvolvimento)
-      passwordValid = password === user.password;
-      
-      // Se não for válida, tenta o método bcrypt como fallback
-      if (!passwordValid) {
-        passwordValid = await bcrypt.compare(password, user.password);
-      }
-    } else {
-      // Em produção, sempre usar bcrypt
-      passwordValid = await bcrypt.compare(password, user.password);
-    }
-    
+    // Verifica a senha
+    const passwordValid = await user.comparePassword(password);
     if (!passwordValid) {
       res.status(401).json({ 
         error: 'Credenciais inválidas',
@@ -180,25 +156,21 @@ export const login: CustomRequestHandler = async (req, res, next) => {
     }
     
     try {
-      // Gera tokens
       const { accessToken, refreshToken } = generateTokens(user);
       
-      // Define cookies para os tokens
-      // O cookie de refresh token deve ser httpOnly para segurança
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
-        path: '/api/auth/refresh' // Restringe o cookie à rota de refresh
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/api/auth/refresh'
       });
       
-      // Responde com os tokens e dados do usuário (incluindo propriedades)
       res.json({ 
         accessToken, 
         refreshToken, 
         user: {
-          id: user.id,
+          id: user._id,
           email: user.email,
           role: user.role,
           name: user.name,
@@ -211,7 +183,6 @@ export const login: CustomRequestHandler = async (req, res, next) => {
         error: 'Erro ao processar login',
         message: error instanceof Error ? error.message : 'Erro interno do servidor'
       });
-      return;
     }
   } catch (error) {
     next(error);
@@ -221,9 +192,8 @@ export const login: CustomRequestHandler = async (req, res, next) => {
 /**
  * Atualiza o token de acesso usando um refresh token
  */
-export const refreshAccessToken: CustomRequestHandler = async (req, res, next) => {
+export const refreshAccessToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Obtém o refresh token do cookie ou do corpo da requisição
     const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
     
     if (!refreshToken) {
@@ -234,7 +204,6 @@ export const refreshAccessToken: CustomRequestHandler = async (req, res, next) =
       return;
     }
     
-    // Verifica se o refresh token existe
     const tokenData = refreshTokens.get(refreshToken);
     if (!tokenData) {
       res.status(401).json({ 
@@ -244,11 +213,8 @@ export const refreshAccessToken: CustomRequestHandler = async (req, res, next) =
       return;
     }
     
-    // Verifica se o refresh token expirou
     if (tokenData.expiresAt < new Date()) {
-      // Remove o token expirado
       refreshTokens.delete(refreshToken);
-      
       res.status(401).json({ 
         error: 'Refresh token expirado',
         code: 'EXPIRED_REFRESH_TOKEN'
@@ -256,12 +222,9 @@ export const refreshAccessToken: CustomRequestHandler = async (req, res, next) =
       return;
     }
     
-    // Busca o usuário
-    const user = users.find(u => u.id === tokenData.userId);
+    const user = await User.findById(tokenData.userId);
     if (!user) {
-      // Remove o token se o usuário não existir mais
       refreshTokens.delete(refreshToken);
-      
       res.status(401).json({ 
         error: 'Usuário não encontrado',
         code: 'USER_NOT_FOUND'
@@ -270,22 +233,18 @@ export const refreshAccessToken: CustomRequestHandler = async (req, res, next) =
     }
     
     try {
-      // Gera novos tokens
       const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
       
-      // Remove o refresh token antigo
       refreshTokens.delete(refreshToken);
       
-      // Define cookies para os novos tokens
       res.cookie('refreshToken', newRefreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+        maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/api/auth/refresh'
       });
       
-      // Responde com os novos tokens
       res.json({ 
         accessToken,
         refreshToken: newRefreshToken
@@ -296,7 +255,6 @@ export const refreshAccessToken: CustomRequestHandler = async (req, res, next) =
         error: 'Erro ao processar renovação de token',
         message: error instanceof Error ? error.message : 'Erro interno do servidor'
       });
-      return;
     }
   } catch (error) {
     next(error);
@@ -306,17 +264,14 @@ export const refreshAccessToken: CustomRequestHandler = async (req, res, next) =
 /**
  * Realiza logout de um usuário
  */
-export const logout: CustomRequestHandler = (req, res, next) => {
+export const logout = (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Obtém o refresh token do cookie ou do corpo da requisição
     const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
     
-    // Se houver um refresh token, remove-o
     if (refreshToken) {
       refreshTokens.delete(refreshToken);
     }
     
-    // Limpa o cookie de refresh token
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -324,10 +279,21 @@ export const logout: CustomRequestHandler = (req, res, next) => {
       path: '/api/auth/refresh'
     });
     
-    // Responde com sucesso
     res.json({ 
       message: 'Logout realizado com sucesso'
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Lista todos os usuários (apenas para administradores)
+ */
+export const listUsers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const users = await User.find({}, { password: 0 });
+    res.json({ users });
   } catch (error) {
     next(error);
   }

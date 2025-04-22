@@ -188,13 +188,13 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       // Tenta atualizar o token
       token = await refreshAccessToken();
     } catch (refreshError) {
-      // Em vez de redirecionar, apenas lançamos o erro para ser tratado pelo componente
-      clearAuthData();
-      throw new Error(JSON.stringify({
-        error: 'Sessão expirada',
-        code: 'SESSION_EXPIRED',
-        message: 'Sua sessão expirou. Por favor, faça login novamente.'
-      }));
+      // Se falhar na atualização, redireciona para login
+      if (typeof window !== 'undefined') {
+        // Verifica se estamos na área de admin para redirecionar para o login correto
+        const isAdminPath = window.location.pathname.startsWith('/admin');
+        window.location.href = isAdminPath ? '/admin/login' : '/login';
+      }
+      throw refreshError;
     }
   }
   
@@ -265,14 +265,16 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
           
           return apiRequest<T>(endpoint, newOptions);
         } catch (refreshError) {
-          // Se falhar no refresh, limpa dados e retorna erro
+          // Se falhar no refresh, limpa dados e redireciona
           clearAuthData();
           
-          throw new Error(JSON.stringify({
-            error: 'Sessão expirada',
-            code: 'SESSION_EXPIRED',
-            message: 'Sua sessão expirou. Por favor, faça login novamente.'
-          }));
+          if (typeof window !== 'undefined') {
+            // Verifica se estamos na área de admin para redirecionar para o login correto
+            const isAdminPath = window.location.pathname.startsWith('/admin');
+            window.location.href = isAdminPath ? '/admin/login' : '/login';
+          }
+          
+          throw new Error('Sessão expirada. Por favor, faça login novamente.');
         }
       }
       
@@ -281,7 +283,12 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
         // Limpa dados de autenticação
         clearAuthData();
         
-        // Em vez de redirecionar, apenas retornamos o erro para ser tratado pelo componente
+        // Redireciona para a página de login apropriada
+        if (typeof window !== 'undefined') {
+          // Verifica se estamos na área de admin para redirecionar para o login correto
+          const isAdminPath = window.location.pathname.startsWith('/admin');
+          window.location.href = isAdminPath ? '/admin/login' : '/login';
+        }
       }
       
       throw new Error(JSON.stringify(apiError));
