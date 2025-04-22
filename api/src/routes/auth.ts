@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, register, refreshToken, logout, listUsers } from '../controllers/authController';
+import { login, register, refreshToken, logout, listUsers, updateUser, deleteUser } from '../controllers/authController';
 import { authenticate, requireAdmin, csrfProtection } from '../middlewares/authMiddleware';
 import { User } from '../models/user';
 
@@ -40,8 +40,10 @@ router.get('/validate', authenticate, (req, res) => {
   });
 });
 
-// Rota protegida de administrador - listar usuários
+// Rotas protegidas de administrador para gerenciamento de usuários
 router.get('/users', authenticate, requireAdmin, listUsers);
+router.put('/users/:id', authenticate, requireAdmin, updateUser);
+router.delete('/users/:id', authenticate, requireAdmin, deleteUser);
 
 // Rota para verificar se o usuário é administrador
 router.get('/admin-check', authenticate, requireAdmin, (req, res) => {

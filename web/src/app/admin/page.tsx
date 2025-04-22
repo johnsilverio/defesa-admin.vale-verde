@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState({
     documents: 0,
     pages: 0,
@@ -11,6 +13,12 @@ export default function AdminDashboard() {
     lastUpdate: ''
   });
 
+  // Redirecionar para a página de documentos
+  useEffect(() => {
+    router.replace('/admin/documentos');
+  }, [router]);
+  
+  // Este código não será executado devido ao redirecionamento acima
   useEffect(() => {
     // In a real application, this would fetch data from an API
     // For demonstration, we're using mock data

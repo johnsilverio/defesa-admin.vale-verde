@@ -297,7 +297,7 @@ export const getCurrentUser: AnyRequestHandler = async (req, res, next) => {
 
     res.json({
       user: {
-        id: req.user._id,
+        id: req.user.id, // Usando id em vez de _id
         name: req.user.name,
         email: req.user.email,
         role: req.user.role,
@@ -341,8 +341,157 @@ export const logout: AnyRequestHandler = (req, res, next) => {
 export const listUsers: AnyRequestHandler = async (req, res, next) => {
   try {
     const users = await User.find({}, { password: 0 });
-    res.json({ users });
+    
+    // Transformar os documentos para garantir que o ID seja retornado corretamente
+    const formattedUsers = users.map(user => ({
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      properties: user.properties
+    }));
+    
+    res.json({ users: formattedUsers });
   } catch (error) {
+    console.error('Erro ao listar usuários:', error);
+    next(error);
+  }
+};
+
+/**
+ * Schema para atualização de usuário
+ */
+const updateUserSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório').optional(),
+  email: z.string().email('Email inválido').optional(),
+  role: z.enum(['user', 'admin']).optional(),
+  properties: z.array(z.string()).optional(),
+  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres').optional()
+});
+
+/**
+ * Atualiza um usuário existente (apenas para administradores)
+ */
+export const updateUser: AnyRequestHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    
+    // Validar o ID antes de prosseguir
+    if (!id || id === 'undefined') {
+      return res.status(400).json({
+        error: 'ID de usuário inválido',
+        code: 'INVALID_USER_ID'
+      });
+    }
+    
+    // Verificar se o usuário existe
+    const userExists = await User.findById(id);
+    if (!userExists) {
+      return res.status(404).json({ 
+        error: 'Usuário não encontrado',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+    
+    // Validar dados de atualização
+    const parseResult = updateUserSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({ 
+        error: 'Dados de atualização inválidos',
+        details: parseResult.error.format()
+      });
+    }
+    
+    const updateData = parseResult.data;
+    
+    // Se o papel for alterado para admin, remover propriedades
+    if (updateData.role === 'admin') {
+      updateData.properties = [];
+    }
+    
+    // Se o papel for alterado para user e não houver propriedades, adicionar a propriedade padrão
+    if (updateData.role === 'user' && (!updateData.properties || updateData.properties.length === 0)) {
+      updateData.properties = ['fazenda-brilhante'];
+    }
+    
+    // Atualizar o usuário
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!updatedUser) {
+      return res.status(404).json({
+        error: 'Erro ao atualizar usuário',
+        code: 'UPDATE_FAILED'
+      });
+    }
+    
+    // Formatar o usuário atualizado para garantir que o ID seja retornado corretamente
+    const formattedUser = {
+      id: updatedUser._id.toString(),
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      properties: updatedUser.properties
+    };
+    
+    res.json({ 
+      message: 'Usuário atualizado com sucesso',
+      user: formattedUser
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar usuário:', error);
+    next(error);
+  }
+};
+
+/**
+ * Exclui um usuário (apenas para administradores)
+ */
+export const deleteUser: AnyRequestHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    
+    // Validar o ID antes de prosseguir
+    if (!id || id === 'undefined') {
+      return res.status(400).json({
+        error: 'ID de usuário inválido',
+        code: 'INVALID_USER_ID'
+      });
+    }
+    
+    console.log('Tentando excluir usuário com ID:', id);
+    
+    // Verificar se o usuário existe
+    const userExists = await User.findById(id);
+    if (!userExists) {
+      return res.status(404).json({ 
+        error: 'Usuário não encontrado',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+    
+    // Não permitir excluir o próprio usuário
+    if (req.user && req.user.id && req.user.id === id) {
+      return res.status(400).json({ 
+        error: 'Não é possível excluir seu próprio usuário',
+        code: 'CANNOT_DELETE_SELF'
+      });
+    }
+    
+    // Log para depuração
+    console.log('Usuário atual:', req.user);
+    
+    // Excluir o usuário
+    await User.findByIdAndDelete(id);
+    
+    res.json({ 
+      message: 'Usuário excluído com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao excluir usuário:', error);
     next(error);
   }
 };

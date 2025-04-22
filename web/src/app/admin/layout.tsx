@@ -29,10 +29,10 @@ export default function AdminLayout({
         isAdmin
       });
       
-      // Se estiver na página de login e for admin, redirecionar para o dashboard
+      // Se estiver na página de login e for admin, redirecionar para a página de documentos
       if (isAdminLoginPage && user && user.role === 'admin') {
-        console.log("Admin já autenticado, redirecionando para o dashboard");
-        router.replace('/admin');
+        console.log("Admin já autenticado, redirecionando para gerenciamento de documentos");
+        router.replace('/admin/documentos');
         return;
       }
       
@@ -148,16 +148,19 @@ export default function AdminLayout({
             </div>
             
             <nav className="space-y-1">
-              <Link
-                href="/admin"
-                className={`nav-link ${pathname === '/admin' ? 'active' : ''}`}
-                onClick={() => setIsMobileSidebarOpen(false)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                Dashboard
-              </Link>
+              {/* Dashboard oculto conforme solicitado */}
+              <div style={{ display: 'none' }}>
+                <Link
+                  href="/admin"
+                  className={`nav-link ${pathname === '/admin' ? 'active' : ''}`}
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                  Dashboard
+                </Link>
+              </div>
               <Link
                 href="/admin/documentos"
                 className={`nav-link ${pathname === '/admin/documentos' || pathname.startsWith('/admin/documentos/') ? 'active' : ''}`}

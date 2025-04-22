@@ -48,7 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('Usuário autenticado:', data.user);
             setUser(data.user);
             
+            // Armazenar email do usuário para identificação na página de gerenciamento
+            if (data.user.email) {
+              localStorage.setItem('user_email', data.user.email);
+            }
+            
             // Configurar cookie para autenticação alternativa
+            
             document.cookie = `authToken=${storedToken}; path=/; max-age=${60*60*24*7}; SameSite=Strict`;
           } else {
             console.error('Resposta de validação inválida:', data);
@@ -89,6 +95,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
       setToken(data.accessToken);
       localStorage.setItem('auth_token', data.accessToken);
+      
+      // Armazenar email do usuário para identificação na página de gerenciamento
+      if (data.user.email) {
+        localStorage.setItem('user_email', data.user.email);
+      }
       
       // Configurar cookie para autenticação alternativa
       document.cookie = `authToken=${data.accessToken}; path=/; max-age=${60*60*24*7}; SameSite=Strict`;
@@ -131,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     localStorage.removeItem('auth_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_email');
     
     // Limpar cookie de autenticação
     document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
