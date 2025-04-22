@@ -93,11 +93,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
     
     try {
+      // Log para debug
+      console.log('Tentando login com:', email);
+      
       // Usar o utilitário de API para fazer login
       const response = await authApi.login({ email, password });
       
+      // Log para debug
+      console.log('Resposta de login:', response);
+      
       // Definir o usuário atual
       setUser(response.user);
+      
+      // Salvar informações no localStorage para persistência
+      localStorage.setItem('user', JSON.stringify(response.user));
+      
+      // Persistir token no localStorage também para garantir que permanece após recarregamento
+      if (response.accessToken) {
+        localStorage.setItem('token', response.accessToken);
+      }
+      
+      // Determinar se o login é administrativo baseado no path atual
+      const isAdminLogin = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+      
+      // Se for login administrativo e o usuário não for admin, não considere como sucesso
+      if (isAdminLogin && response.user.role !== 'admin') {
+        setUser(null);
+        clearAuthData();
+        return { 
+          success: false, 
+          message: 'Você não tem permissão de administrador.', 
+          role: response.user.role 
+        };
+      }
       
       return { 
         success: true, 
@@ -107,13 +135,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error('Erro de login:', error);
       
+      // Obter mensagem detalhada do erro
+      let errorMessage = 'Credenciais inválidas. Por favor, tente novamente.';
+      
+      if (error instanceof Error) {
+        try {
+          // Tentar extrair mensagem detalhada do erro da API
+          const apiError = JSON.parse(error.message);
+          errorMessage = apiError.error || apiError.message || errorMessage;
+        } catch {
+          // Se não for um erro JSON, usar a mensagem regular
+          errorMessage = error.message || errorMessage;
+        }
+      }
+      
       // Certifique-se de que o estado é limpo em caso de erro
       setUser(null);
       clearAuthData();
       
       return { 
         success: false, 
-        message: error instanceof Error ? error.message : 'Credenciais inválidas. Por favor, tente novamente.' 
+        message: errorMessage
       };
     } finally {
       setIsLoading(false);

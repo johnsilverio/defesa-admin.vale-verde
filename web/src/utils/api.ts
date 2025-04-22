@@ -188,11 +188,13 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       // Tenta atualizar o token
       token = await refreshAccessToken();
     } catch (refreshError) {
-      // Se falhar na atualização, redireciona para login
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-      throw refreshError;
+      // Em vez de redirecionar, apenas lançamos o erro para ser tratado pelo componente
+      clearAuthData();
+      throw new Error(JSON.stringify({
+        error: 'Sessão expirada',
+        code: 'SESSION_EXPIRED',
+        message: 'Sua sessão expirou. Por favor, faça login novamente.'
+      }));
     }
   }
   
@@ -263,14 +265,14 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
           
           return apiRequest<T>(endpoint, newOptions);
         } catch (refreshError) {
-          // Se falhar no refresh, limpa dados e redireciona
+          // Se falhar no refresh, limpa dados e retorna erro
           clearAuthData();
           
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
-          
-          throw new Error('Sessão expirada. Por favor, faça login novamente.');
+          throw new Error(JSON.stringify({
+            error: 'Sessão expirada',
+            code: 'SESSION_EXPIRED',
+            message: 'Sua sessão expirou. Por favor, faça login novamente.'
+          }));
         }
       }
       
@@ -279,10 +281,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
         // Limpa dados de autenticação
         clearAuthData();
         
-        // Redireciona para a página de login
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+        // Em vez de redirecionar, apenas retornamos o erro para ser tratado pelo componente
       }
       
       throw new Error(JSON.stringify(apiError));
@@ -368,16 +367,23 @@ export const authApi = {
    * @param credentials - Credenciais (email e senha)
    */
   login: async (credentials: { email: string; password: string }): Promise<AuthResponse> => {
-    const data = await apiRequest<AuthResponse>('/api/auth/login', {
-      method: 'POST',
-      data: credentials,
-      credentials: 'include', // Para enviar/receber cookies
-    });
-    
-    // Salva os dados de autenticação
-    saveAuthData(data);
-    
-    return data;
+    try {
+      // Chamamos a API sem tentar manipular eventos de forma incorreta
+      const data = await apiRequest<AuthResponse>('/api/auth/login', {
+        method: 'POST',
+        data: credentials,
+        credentials: 'include', // Para enviar/receber cookies
+      });
+      
+      // Salva os dados de autenticação
+      saveAuthData(data);
+      
+      return data;
+    } catch (error) {
+      console.error('Erro durante login na API:', error);
+      // Re-lançar o erro para ser tratado pelo componente
+      throw error;
+    }
   },
   
   /**

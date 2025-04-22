@@ -10,25 +10,84 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [validationError, setValidationError] = useState('');
   const { login, isLoading } = useAuth();
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Função para validar inputs
+  const validateInputs = () => {
+    if (!email.trim()) {
+      setValidationError('O campo de email é obrigatório.');
+      return false;
+    }
+    
+    if (!password.trim()) {
+      setValidationError('O campo de senha é obrigatório.');
+      return false;
+    }
+    
+    setValidationError('');
+    return true;
+  };
+
+  // Função para lidar com o login
+  const handleLogin = async (e?: React.MouseEvent | React.KeyboardEvent) => {
+    // Se recebemos um evento, prevenimos qualquer comportamento padrão
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Impede processamento durante carregamento
+    if (isLoading) return;
+    
+    // Limpa mensagens de erro anteriores
     setError('');
+    setValidationError('');
+    
+    // Valida os campos de entrada
+    if (!validateInputs()) {
+      return;
+    }
 
     try {
+      console.log('Tentando login de usuário com:', email);
       const result = await login(email, password);
+      console.log('Resultado do login:', result);
       
       if (result.success) {
         // Redirect to home page (Início) after login
         router.replace('/');
       } else {
+        // Definir mensagem de erro e não redirecionar
         setError(result.message);
       }
     } catch (err) {
-      setError('Ocorreu um erro durante o login. Por favor tente novamente.');
-      console.error('Login error:', err);
+      console.error('Erro detalhado de login:', err);
+      
+      // Extrair mensagem de erro mais detalhada quando possível
+      let errorMessage = 'Ocorreu um erro durante o login. Por favor tente novamente.';
+      
+      if (err instanceof Error) {
+        try {
+          // Tenta interpretar se há um erro de API detalhado
+          const apiErrorObj = JSON.parse(err.message);
+          errorMessage = apiErrorObj.error || apiErrorObj.message || err.message;
+        } catch {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
+    }
+  };
+
+  // Manipulador para a tecla Enter nos campos
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleLogin(e);
     }
   };
 
@@ -58,14 +117,14 @@ export default function Login() {
             </p>
           </div>
 
-          <form className="space-y-5" onSubmit={handleLogin}>
-            {error && (
+          <div className="space-y-5">
+            {(error || validationError) && (
               <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-md animate-fadeIn">
                 <p className="flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
-                  {error}
+                  {validationError || error}
                 </p>
               </div>
             )}
@@ -77,7 +136,7 @@ export default function Login() {
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <input
@@ -85,9 +144,9 @@ export default function Login() {
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary-green)] focus:border-transparent"
                   placeholder="seu@email.com"
-                  required
                 />
               </div>
             </div>
@@ -107,16 +166,17 @@ export default function Login() {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary-green)] focus:border-transparent"
                   placeholder="••••••••"
-                  required
                 />
               </div>
             </div>
             
             <div className="pt-2">
               <button
-                type="submit"
+                type="button"
+                onClick={handleLogin}
                 disabled={isLoading}
                 className="w-full py-2.5 px-4 border border-transparent rounded-md shadow-sm text-white bg-[var(--primary-green)] hover:bg-[var(--dark-green)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-green)] transition-colors duration-200 font-medium"
               >
@@ -131,17 +191,11 @@ export default function Login() {
                 ) : 'Entrar'}
               </button>
             </div>
-          </form>
-
-          <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-100">
-            <p className="text-center text-sm text-gray-600">
-              <span className="block mb-2 font-medium">Credenciais para teste:</span>
-              <span className="block">Usuário: user@example.com</span>
-              <span className="block">Senha: user123</span>
-            </p>
           </div>
+
+          {/* Seção de credenciais removida conforme solicitado */}
         </div>
       </div>
     </main>
   );
-} 
+}

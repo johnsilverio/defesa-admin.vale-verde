@@ -17,28 +17,45 @@ export default function AdminLayout({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const isAdminLoginPage = pathname === '/admin/login';
 
-  // Don't check authentication for the admin login page
-  if (isAdminLoginPage) {
-    return children;
-  }
-
-  // Check authentication only for admin pages, but not the login page
+  // Este useEffect é chamado consistentemente em toda renderização
   useEffect(() => {
-    if (!isLoading && !isAdminLoginPage) {
-      if (!user) {
-        router.push('/admin/login');
-      } else if (!isAdmin) {
-        router.push('/access-denied');
+    // Verificar se o usuário está autenticado como admin e redirecionar adequadamente
+    if (!isLoading) {
+      // Se estiver na página de login e for admin, redirecionar para o dashboard
+      if (isAdminLoginPage && user && user.role === 'admin') {
+        console.log("Admin já autenticado, redirecionando para o dashboard");
+        router.replace('/admin');
+        return;
+      }
+      
+      // Se não estiver na página de login e não for admin, redirecionar para o login
+      if (!isAdminLoginPage && !user) {
+        console.log("Usuário não autenticado, redirecionando para login");
+        router.replace('/admin/login');
+        return;
+      }
+      
+      // Se não estiver na página de login e não for admin, redirecionar para página de acesso negado
+      if (!isAdminLoginPage && user && !isAdmin) {
+        console.log("Usuário autenticado não é admin, redirecionando para acesso negado");
+        router.replace('/access-denied');
+        return;
       }
     }
   }, [router, user, isAdmin, isLoading, isAdminLoginPage]);
+
+  // Renderização condicional APÓS todos os hooks serem chamados
+  if (isAdminLoginPage) {
+    return <>{children}</>;
+  }
   
   // Show loading while checking authentication status
   if (isLoading) {
     return <Loading />;
   }
   
-  // If not admin and not on login page, show access denied
+  // Se não estiver autenticado como admin e não estiver na página de login, mostre loading
+  // O useEffect acima já vai redirecionar para a página correta
   if (!isAdmin && !isAdminLoginPage) {
     return <Loading />;
   }
@@ -49,6 +66,7 @@ export default function AdminLayout({
       : '';
   };
 
+  // Se chegou aqui, é porque o usuário está autenticado como admin
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Mobile Sidebar Toggle */}
@@ -175,4 +193,4 @@ export default function AdminLayout({
       </div>
     </div>
   );
-} 
+}

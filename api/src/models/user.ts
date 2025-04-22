@@ -8,31 +8,31 @@ export interface User {
 }
 
 export const users: User[] = [
-  // Usuário admin de teste (senha em texto puro para facilitar testes em desenvolvimento)
+  // Usuário admin - Paulo Martins
   { 
     id: 1, 
-    email: 'admin@example.com', 
-    password: 'password123', // Em produção, usar hash bcrypt
-    name: 'Administrador',
+    email: 'paulo.martins@valeverdeambiental.com.br', 
+    password: '@valeverde2025',
+    name: 'Paulo Martins',
     role: 'admin',
     properties: ['todas'] // Admin tem acesso a todas as propriedades
   },
-  // Usuário comum de teste (senha em texto puro para facilitar testes em desenvolvimento)
-  {
-    id: 2,
-    email: 'user@example.com',
-    password: 'password123', // Em produção, usar hash bcrypt
-    name: 'John Doe',
-    role: 'user',
-    properties: ['fazenda-brilhante'] // Usuário tem acesso apenas à Fazenda Brilhante
+  // Usuário admin - Desenvolvimento
+  { 
+    id: 2, 
+    email: 'desenvolvimento@valeverdeambiental.com.br', 
+    password: '@valeverde123',
+    name: 'Desenvolvimento Vale Verde',
+    role: 'admin',
+    properties: ['todas'] // Admin tem acesso a todas as propriedades
   },
-  // Outro usuário de teste para demonstrar isolamento entre propriedades
+  // Usuário comum para teste
   {
     id: 3,
-    email: 'maria@example.com',
-    password: 'password123', // Em produção, usar hash bcrypt
-    name: 'Maria Silva',
+    email: 'user@example.com',
+    password: 'user123', // Em produção, usar hash bcrypt
+    name: 'John',
     role: 'user',
-    properties: ['fazenda-aurora'] // Este usuário tem acesso apenas à Fazenda Aurora
+    properties: ['fazenda-brilhante'] // Usuário tem acesso apenas à Fazenda Brilhante
   }
 ];
