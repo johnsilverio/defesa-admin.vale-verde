@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getDocuments, uploadDocument, deleteDocument } from '../controllers/documentController';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { authenticate, requireAdmin } from '../middlewares/authMiddleware';
 
 const router = Router();
 

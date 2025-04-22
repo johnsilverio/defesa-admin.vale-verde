@@ -190,9 +190,9 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 };
 
 /**
- * Atualiza o token de acesso usando um refresh token
+ * Renovação de token de acesso
  */
-export const refreshAccessToken = async (req: Request, res: Response, next: NextFunction) => {
+export const refreshToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
     
@@ -256,6 +256,32 @@ export const refreshAccessToken = async (req: Request, res: Response, next: Next
         message: error instanceof Error ? error.message : 'Erro interno do servidor'
       });
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Obtém informações do usuário logado
+ */
+export const getCurrentUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Usuário não autenticado',
+        code: 'NOT_AUTHENTICATED'
+      });
+    }
+
+    res.json({
+      user: {
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+        properties: req.user.properties
+      }
+    });
   } catch (error) {
     next(error);
   }

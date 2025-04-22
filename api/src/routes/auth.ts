@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { login, register, refreshAccessToken, logout, listUsers } from '../controllers/authController';
-import { authenticate, requireAdmin, csrfProtection } from '../middleware/auth';
+import { login, register, refreshToken, logout, listUsers } from '../controllers/authController';
+import { authenticate, requireAdmin, csrfProtection } from '../middlewares/authMiddleware';
 import { User } from '../models/user';
 
 const router = Router();
@@ -8,7 +8,7 @@ const router = Router();
 // Rotas públicas
 router.post('/login', login);
 router.post('/register', register);
-router.post('/refresh', refreshAccessToken);
+router.post('/refresh', refreshToken);
 router.post('/logout', logout);
 
 // Rota protegida - obter informações do usuário atual
@@ -16,10 +16,11 @@ router.get('/me', authenticate, (req, res) => {
   // O middleware authenticate já adicionou o usuário ao req
   res.json({
     user: {
-      id: req.user?.id,
+      id: req.user?._id,
       email: req.user?.email,
       name: req.user?.name,
-      role: req.user?.role
+      role: req.user?.role,
+      properties: req.user?.properties
     }
   });
 });
@@ -30,10 +31,11 @@ router.get('/validate', authenticate, (req, res) => {
     valid: true,
     message: 'Token válido',
     user: {
-      id: req.user?.id,
+      id: req.user?._id,
       email: req.user?.email,
       name: req.user?.name,
-      role: req.user?.role
+      role: req.user?.role,
+      properties: req.user?.properties
     }
   });
 });

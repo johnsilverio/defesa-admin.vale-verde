@@ -2,7 +2,7 @@ import { Router, RequestHandler } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { authenticate, requireAdmin } from '../middlewares/authMiddleware';
 
 // Configuração do multer com nomes personalizados para os arquivos
 const storage = multer.diskStorage({
