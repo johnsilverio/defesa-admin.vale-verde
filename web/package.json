@@ -1,0 +1,42 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "NODE_ENV=development next dev",
+    "build": "next build",
+    "build:prod": "NODE_ENV=production next build",
+    "start": "next start",
+    "start:prod": "NODE_ENV=production next start",
+    "analyze": "ANALYZE=true next build",
+    "lint": "next lint",
+    "dev:setup": "npm run create-env:dev",
+    "prod:setup": "npm run create-env:prod",
+    "create-env:dev": "node -e \"require('fs').writeFileSync('.env.development.local', 'NEXT_PUBLIC_API_URL=http://localhost:4000\\nNEXT_PUBLIC_ENV=development')\"",
+    "create-env:prod": "node -e \"require('fs').writeFileSync('.env.production.local', 'NEXT_PUBLIC_API_URL=https://api.seu-site-de-producao.com\\nNEXT_PUBLIC_ENV=production')\""
+  },
+  "dependencies": {
+    "next": "14.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-quill": "^2.0.0",
+    "swr": "^2.2.5",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@types/uuid": "^9.0.7",
+    "autoprefixer": "^10.4.17",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.1.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

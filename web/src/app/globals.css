@@ -1,0 +1,341 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-green: #4cd137; /* Verde vibrante da logo */
+  --dark-green: #1e8449; /* Verde escuro da logo */
+  --light-green: #e8f5e9; /* Verde claro para fundos */
+  --text-dark: #333333;
+  --text-light: #ffffff;
+  --background-light: #f9f9f9;
+  --border-color: #e0e0e0;
+  --hero-bg: #1e8449;
+  --footer-bg: #1e8449;
+}
+
+body {
+  color: var(--text-dark);
+  background-color: var(--background-light);
+  position: relative;
+  min-height: 100vh;
+}
+
+@layer base {
+  body {
+    @apply bg-[var(--background-light)] text-[var(--text-dark)];
+    font-family: 'Roboto', Arial, sans-serif;
+    line-height: 1.6;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold leading-tight;
+  }
+  
+  p {
+    @apply mb-4 leading-relaxed;
+    max-width: 100%;
+  }
+  
+  main {
+    @apply pt-20;
+  }
+}
+
+@layer components {
+  .container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .btn {
+    @apply inline-block px-5 py-2.5 bg-[var(--primary-green)] text-white font-medium rounded transition-colors duration-300 hover:bg-[var(--dark-green)] text-center;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent border border-[var(--primary-green)] text-[var(--primary-green)] hover:bg-[var(--primary-green)] hover:text-white;
+  }
+
+  .hero {
+    @apply bg-[var(--hero-bg)] text-white py-16 text-center mb-10 relative overflow-hidden;
+  }
+
+  .section {
+    @apply mb-16;
+  }
+
+  .section-title {
+    @apply text-2xl sm:text-3xl text-[var(--dark-green)] mb-6 pb-2 border-b-2 border-[var(--primary-green)];
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg;
+  }
+
+  .card-title {
+    @apply text-xl text-[var(--dark-green)] font-semibold mb-4 border-b border-[var(--light-green)] pb-2;
+  }
+  
+  .nav-link {
+    @apply text-[var(--text-dark)] font-medium hover:text-[var(--primary-green)] transition-colors relative py-2;
+  }
+  
+  .nav-link::after {
+    @apply content-[''] absolute w-0 h-0.5 bg-[var(--primary-green)] bottom-0 left-0 transition-all duration-300;
+  }
+  
+  .nav-link:hover::after, .nav-link.active::after {
+    @apply w-full;
+  }
+  
+  .nav-link.active {
+    @apply text-[var(--primary-green)];
+  }
+  
+  .document-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6;
+  }
+  
+  .document-card {
+    @apply bg-white rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border border-gray-100;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .document-card h3 {
+    @apply text-lg font-bold text-[var(--dark-green)] mb-3;
+  }
+  
+  .document-card p {
+    @apply text-sm mb-5 text-gray-600;
+    flex-grow: 1;
+  }
+  
+  .document-card .btn {
+    @apply mt-auto;
+  }
+  
+  /* Timeline styles */
+  .timeline {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 1rem 0;
+  }
+  
+  .timeline::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    background-color: var(--primary-green);
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    margin-left: -3px;
+    border-radius: 3px;
+  }
+  
+  .timeline-container {
+    position: relative;
+    width: 50%;
+    padding: 10px 30px;
+    box-sizing: border-box;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease-in-out;
+  }
+  
+  .timeline-container.animate {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .timeline-container.left {
+    left: 0;
+  }
+  
+  .timeline-container.right {
+    left: 50%;
+  }
+  
+  .timeline-content {
+    position: relative;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .timeline-content:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+  }
+  
+  .timeline-date {
+    display: inline-block;
+    padding: 6px 12px;
+    margin-bottom: 10px;
+    background-color: var(--light-green);
+    color: var(--dark-green);
+    font-weight: 600;
+    border-radius: 20px;
+    font-size: 0.9rem;
+  }
+  
+  .timeline-container::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border: 4px solid var(--primary-green);
+    border-radius: 50%;
+    top: 30px;
+    z-index: 1;
+  }
+  
+  .timeline-container.left::after {
+    right: -10px;
+  }
+  
+  .timeline-container.right::after {
+    left: -10px;
+  }
+  
+  .timeline-container.left::before {
+    content: '';
+    position: absolute;
+    height: 0;
+    width: 0;
+    top: 32px;
+    right: 20px;
+    border: 10px solid transparent;
+    border-left-color: white;
+    z-index: 1;
+  }
+  
+  .timeline-container.right::before {
+    content: '';
+    position: absolute;
+    height: 0;
+    width: 0;
+    top: 32px;
+    left: 20px;
+    border: 10px solid transparent;
+    border-right-color: white;
+    z-index: 1;
+  }
+  
+  @media screen and (max-width: 768px) {
+    .timeline::after {
+      left: 31px;
+    }
+    
+    .timeline-container {
+      width: 100%;
+      padding-left: 70px;
+      padding-right: 25px;
+    }
+    
+    .timeline-container.right {
+      left: 0;
+    }
+    
+    .timeline-container.left::after, 
+    .timeline-container.right::after {
+      left: 21px;
+    }
+    
+    .timeline-container.left::before,
+    .timeline-container.right::before {
+      left: 60px;
+      border-right-color: white;
+      border-left-color: transparent;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.8s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.8s ease-out 0.3s both;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.8s ease-out 0.3s both;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.8s ease-out 0.3s both;
+}
+
+/* Filter controls for documents */
+.filter-controls {
+  @apply flex flex-wrap gap-2 mb-6;
+}
+
+.filter-button {
+  @apply px-4 py-2 bg-gray-100 text-gray-700 rounded-md transition-colors duration-200 text-sm font-medium;
+}
+
+.filter-button:hover {
+  @apply bg-gray-200;
+}
+
+.filter-button.active {
+  @apply bg-[var(--primary-green)] text-white;
+}
+
+/* Timeline animation */
+.timeline-item {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.6s ease-out;
+}
+
+.timeline-item.animate {
+  opacity: 1;
+  transform: translateY(0);
+}
