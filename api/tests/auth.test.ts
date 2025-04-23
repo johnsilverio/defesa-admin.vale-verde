@@ -1,88 +1,98 @@
 import request from 'supertest';
 import express from 'express';
+import mongoose from 'mongoose';
 import authRoutes from '../src/routes/auth';
 import dotenv from 'dotenv';
 
 // Carrega variáveis de ambiente para os testes
 dotenv.config();
 
-// Configura a variável de ambiente para o modo de desenvolvimento para testes
-process.env.NODE_ENV = 'development';
+process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-key-for-jwt';
+process.env.MONGODB_URI = 'mongodb://localhost:27017/defesa-admin-test';
 
-describe('Auth API - Login Tests', () => {
-  const app = express();
-  app.use(express.json());
-  app.use('/api/auth', authRoutes);
+const app = express();
+app.use(express.json());
+app.use('/api/auth', authRoutes);
 
-  // Usuários pré-configurados no sistema
-  const userCredentials = {
-    email: 'user@example.com',
-    password: 'user123'
+beforeAll(async () => {
+  await mongoose.connect(process.env.MONGODB_URI!);
+  await mongoose.connection.dropDatabase();
+});
+afterAll(async () => {
+  await mongoose.disconnect();
+});
+
+describe('Auth API', () => {
+  const user = {
+    name: 'Test User',
+    email: 'testuser@example.com',
+    password: 'test1234',
   };
 
-  const adminCredentials1 = {
-    email: 'paulo.martins@valeverdeambiental.com.br',
-    password: '@valeverde2025'
-  };
+  let accessToken = '';
+  let refreshToken = '';
 
-  const adminCredentials2 = {
-    email: 'desenvolvimento@valeverdeambiental.com.br',
-    password: '@valeverde123'
-  };
-
-  // Teste de login para usuário padrão
-  test('should login with valid user credentials', async () => {
+  /** Registro de usuário */
+  it('deve registrar um novo usuário', async () => {
     const res = await request(app)
-      .post('/api/auth/login')
-      .send(userCredentials);
-    
-    expect(res.statusCode).toBe(200);
-    expect(res.body.accessToken).toBeDefined();
+      .post('/api/auth/register')
+      .send(user);
+    expect(res.statusCode).toBe(201);
+    expect(res.body.user.email).toBe(user.email);
     expect(res.body.user.role).toBe('user');
   });
 
-  // Teste de login para administrador Paulo Martins
-  test('should login with valid admin credentials (Paulo)', async () => {
+  /** Login com usuário registrado */
+  it('deve fazer login com usuário registrado', async () => {
     const res = await request(app)
       .post('/api/auth/login')
-      .send(adminCredentials1);
-    
+      .send({ email: user.email, password: user.password });
     expect(res.statusCode).toBe(200);
     expect(res.body.accessToken).toBeDefined();
-    expect(res.body.user.role).toBe('admin');
+    expect(res.body.user.email).toBe(user.email);
+    accessToken = res.body.accessToken;
+    refreshToken = res.body.refreshToken;
   });
 
-  // Teste de login para administrador Desenvolvimento
-  test('should login with valid admin credentials (Desenvolvimento)', async () => {
+  /** Login com credenciais inválidas */
+  it('não deve logar com senha errada', async () => {
     const res = await request(app)
       .post('/api/auth/login')
-      .send(adminCredentials2);
-    
-    expect(res.statusCode).toBe(200);
-    expect(res.body.accessToken).toBeDefined();
-    expect(res.body.user.role).toBe('admin');
-  });
-
-  // Teste de login com credenciais inválidas
-  test('should not login with invalid credentials', async () => {
-    const res = await request(app)
-      .post('/api/auth/login')
-      .send({ email: 'fail@example.com', password: 'wrong' });
-    
+      .send({ email: user.email, password: 'errada' });
     expect(res.statusCode).toBe(401);
     expect(res.body.error).toBe('Credenciais inválidas');
   });
+
+  /** Validação de token */
+  it('deve validar token de acesso', async () => {
+    const res = await request(app)
+      .get('/api/auth/validate')
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.valid).toBe(true);
+    expect(res.body.user.email).toBe(user.email);
+  });
+
+  /** Refresh token */
+  it('deve renovar o token de acesso', async () => {
+    const res = await request(app)
+      .post('/api/auth/refresh')
+      .set('Cookie', [`refreshToken=${refreshToken}`])
+      .send({ refreshToken });
+    // Atualiza o refreshToken para o novo, caso precise ser usado em testes seguintes
+    refreshToken = res.body.refreshToken;
+    expect(res.statusCode).toBe(200);
+    expect(res.body.accessToken).toBeDefined();
+    expect(res.body.refreshToken).toBeDefined();
+  });
+
+  /** Logout */
+  it('deve realizar logout', async () => {
+    const res = await request(app)
+      .post('/api/auth/logout')
+      .send({ refreshToken });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.message).toMatch(/logout/i);
+  });
 });
-[{
-	"resource": "/home/johnsilverio/Documents/Projects/defesa-admin-vv/api/tests/auth.test.ts",
-	"owner": "typescript",
-	"code": "2307",
-	"severity": 8,
-	"message": "Cannot find module 'supertest' or its corresponding type declarations.",
-	"source": "ts",
-	"startLineNumber": 1,
-	"startColumn": 21,
-	"endLineNumber": 1,
-	"endColumn": 32
-}]

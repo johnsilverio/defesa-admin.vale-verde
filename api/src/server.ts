@@ -1,4 +1,7 @@
-// src/server.ts
+/**
+ * Ponto de entrada da API DefesaAdmin.
+ * Configura middlewares globais, rotas, tratamento de erros e inicializa o servidor Express.
+ */
 import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -11,26 +14,25 @@ import routes from './routes';
 import authRouter from './routes/auth';
 import documentsRouter from './routes/documents';
 
-// Carregar variáveis de ambiente
+// Carrega variáveis de ambiente
 dotenv.config();
 
+// Configuração do CORS
 const app = express();
 
-// Configuração do CORS mais segura
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With'],
   exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
-  credentials: true, // Necessário para cookies
-  maxAge: 86400 // Cache preflight por 24 horas
+  credentials: true,
+  maxAge: 86400
 }));
 
-// Configurar opções de cookie padrão para segurança
+// Configura opções de cookie padrão para segurança
 app.use((req, res, next) => {
   const originalCookie = res.cookie.bind(res);
   
-  // Sobrescrever o método cookie para aplicar configurações padrão
   res.cookie = function(name: string, value: string, options: any = {}) {
     const defaultOptions = {
       httpOnly: options.httpOnly !== false,
@@ -49,13 +51,12 @@ app.use(helmet({
   contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false
 }));
 
-// Configuração para desativar o rate limiting em desenvolvimento
+// Configuração de rate limits
 const DISABLE_RATE_LIMITS = process.env.DISABLE_RATE_LIMITS === 'true' || process.env.NODE_ENV !== 'production';
 
-// Limites de requisição para prevenir ataques de força bruta
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: DISABLE_RATE_LIMITS ? 1000000 : 100, // Limite muito alto em dev, 100 em produção
+  max: DISABLE_RATE_LIMITS ? 1000000 : 100,
   standardHeaders: true,
   message: {
     error: 'Muitas requisições deste IP, tente novamente mais tarde',
@@ -66,7 +67,7 @@ const limiter = rateLimit({
 // Aplicar limitador nas rotas de autenticação apenas em produção
 if (!DISABLE_RATE_LIMITS) {
   app.use('/api/auth/login', rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
+    windowMs: 15 * 60 * 1000,
     max: 5, // limite mais restrito para login
     message: {
       error: 'Muitas tentativas de login. Tente novamente após 15 minutos',
@@ -78,14 +79,14 @@ if (!DISABLE_RATE_LIMITS) {
 }
 
 // Middleware para parsear JSON e cookies
-app.use(express.json({ limit: '10mb' })); // Limitar tamanho do payload
-app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Para dados de formulário
-app.use(cookieParser(process.env.COOKIE_SECRET || 'defesa-admin-secret')); // Usar secret para cookies assinados
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser(process.env.COOKIE_SECRET || 'defesa-admin-secret'));
 
 // Servir arquivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Registrar requisições em ambiente de desenvolvimento
+// Log de requisições em desenvolvimento
 if (process.env.NODE_ENV !== 'production') {
   app.use((req, res, next) => {
     console.log(`${req.method} ${req.originalUrl}`);
@@ -93,13 +94,9 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Usar o router centralizado
+// Registrar rotas
 app.use('/api', routes);
-
-// Adicionar explicitamente as rotas de autenticação
 app.use('/api/auth', authRouter);
-
-// Adicionar explicitamente as rotas de documentos
 app.use('/api/documents', documentsRouter);
 
 // Rota principal
@@ -114,11 +111,10 @@ app.get('/', (req, res) => {
 
 // Middleware para rotas não encontradas
 app.use((req, res) => {
-  // Tratamento especial para rotas de API específicas que não são encontradas
+  // Tratamento especial para rotas de API específicas
   const apiPaths = ['/documents', '/categories', '/properties'];
   if (apiPaths.some(path => req.originalUrl.includes(path)) && req.method === 'GET') {
     console.log(`Rota não encontrada: ${req.originalUrl}. Corrigindo para /api${req.originalUrl}`);
-    // Redirecionar para a versão com prefixo /api
     if (!req.originalUrl.startsWith('/api')) {
       return res.redirect(`/api${req.originalUrl}`);
     }
@@ -134,7 +130,7 @@ app.use((req, res) => {
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   console.error('Erro não tratado:', err);
   
-  // Verificar se é um erro de sintaxe JSON
+  // Erro de sintaxe JSON
   if (err instanceof SyntaxError && 'body' in err) {
     res.status(400).json({
       error: 'JSON inválido',
@@ -151,7 +147,6 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   });
 };
 
-// Adicionar o middleware de tratamento de erros
 app.use(errorHandler);
 
 // Conectar ao MongoDB

@@ -1,5 +1,8 @@
 import mongoose, { Document } from 'mongoose';
 
+/**
+ * Interface de propriedade do sistema.
+ */
 export interface IProperty extends Document {
   _id: string;
   name: string;
@@ -11,40 +14,17 @@ export interface IProperty extends Document {
 }
 
 const propertySchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  slug: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true
-  },
-  description: {
-    type: String,
-    trim: true
-  },
-  active: {
-    type: Boolean,
-    default: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
+  name: { type: String, required: true, trim: true },
+  slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  description: { type: String, trim: true },
+  active: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
-// Update the updatedAt field on save
 propertySchema.pre('save', function(next) {
   this.updatedAt = new Date();
   next();
 });
 
-export const Property = mongoose.model<IProperty>('Property', propertySchema); 
+export const Property = mongoose.model<IProperty>('Property', propertySchema);

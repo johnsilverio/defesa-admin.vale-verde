@@ -1,27 +1,27 @@
 /**
- * Converts a string to a slug format
- * Example: "Defesa Administrativa" -> "defesa-administrativa"
+ * Converte um texto para formato de slug
+ * Ex: "Defesa Administrativa" -> "defesa-administrativa"
  */
 export const slugify = (text: string): string => {
   return text
     .toString()
-    .normalize('NFD')  // normalize diacritical marks
-    .replace(/[\u0300-\u036f]/g, '') // remove diacritical marks
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
     .toLowerCase()
-    .replace(/\s+/g, '-')  // replace spaces with hyphens
-    .replace(/[^\w-]+/g, '') // remove non-word characters
-    .replace(/--+/g, '-')  // replace multiple hyphens with a single hyphen
-    .replace(/^-+/, '')  // trim hyphens from start
-    .replace(/-+$/, '');  // trim hyphens from end
+    .replace(/\s+/g, '-')  // Substitui espaços por hífens
+    .replace(/[^\w-]+/g, '') // Remove caracteres especiais
+    .replace(/--+/g, '-')  // Substitui múltiplos hífens por um único
+    .replace(/^-+/, '')  // Remove hífens no início
+    .replace(/-+$/, '');  // Remove hífens no final
 };
 
 /**
- * Normalizes a filename for storage
- * Example: "Documento Legal (2023).pdf" -> "documento-legal-2023.pdf"
+ * Normaliza um nome de arquivo para armazenamento
+ * Ex: "Documento Legal (2023).pdf" -> "documento-legal-2023.pdf"
  */
 export const normalizeFileName = (fileName: string): string => {
   const extension = fileName.split('.').pop() || '';
   const baseName = fileName.substring(0, fileName.length - extension.length - 1);
   const slugifiedName = slugify(baseName);
   return `${slugifiedName}.${extension.toLowerCase()}`;
-}; 
+};

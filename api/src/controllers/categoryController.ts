@@ -27,7 +27,10 @@ const updateOrdersSchema = z.object({
   }))
 });
 
-// Get all categories (optionally filtered by property)
+/**
+ * Lista todas as categorias, opcionalmente filtrando por propriedade.
+ * @route GET /api/categories
+ */
 export const getAllCategories: AnyRequestHandler = async (req, res, next) => {
   try {
     const { property } = req.query;
@@ -40,7 +43,10 @@ export const getAllCategories: AnyRequestHandler = async (req, res, next) => {
   }
 };
 
-// Get a category by ID
+/**
+ * Busca uma categoria pelo ID.
+ * @route GET /api/categories/:id
+ */
 export const getCategoryById: AnyRequestHandler = async (req, res, next) => {
   try {
     const category = await Category.findById(req.params.id);
@@ -53,7 +59,10 @@ export const getCategoryById: AnyRequestHandler = async (req, res, next) => {
   }
 };
 
-// Create a new category
+/**
+ * Cria uma nova categoria.
+ * @route POST /api/categories
+ */
 export const createCategory: AnyRequestHandler = async (req, res, next) => {
   try {
     console.log('Recebendo requisição para criar categoria:', req.body);
@@ -130,7 +139,10 @@ export const createCategory: AnyRequestHandler = async (req, res, next) => {
   }
 };
 
-// Update a category
+/**
+ * Atualiza uma categoria existente.
+ * @route PUT /api/categories/:id
+ */
 export const updateCategory: AnyRequestHandler = async (req, res, next) => {
   try {
     console.log('Recebendo requisição para atualizar categoria:', { id: req.params.id, body: req.body });
@@ -279,7 +291,10 @@ export const updateCategory: AnyRequestHandler = async (req, res, next) => {
   }
 };
 
-// Update categories orders
+/**
+ * Atualiza a ordem das categorias.
+ * @route PATCH /api/categories/order
+ */
 export const updateCategoriesOrder: AnyRequestHandler = async (req, res, next) => {
   try {
     const parseResult = updateOrdersSchema.safeParse(req.body);
@@ -313,7 +328,10 @@ export const updateCategoriesOrder: AnyRequestHandler = async (req, res, next) =
   }
 };
 
-// Delete a category
+/**
+ * Remove uma categoria e seus documentos associados.
+ * @route DELETE /api/categories/:id
+ */
 export const deleteCategory: AnyRequestHandler = async (req, res, next) => {
   try {
     console.log('Recebendo requisição para excluir categoria:', req.params.id);

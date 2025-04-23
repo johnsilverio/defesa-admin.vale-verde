@@ -3,27 +3,30 @@ import multer from 'multer';
 import { getAllDocuments, getDocumentById, createDocument, updateDocument, deleteDocument, downloadDocument } from '../controllers/documentController';
 import { authenticate, requireAdmin } from '../middlewares/authMiddleware';
 
-// Configure multer storage
 const storage = multer.memoryStorage();
 const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // Limit to 10MB
-  }
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 const router = Router();
 
-// Public routes - anyone can view documents
+/**
+ * Rotas públicas de documentos
+ */
 router.get('/', getAllDocuments);
 router.get('/:id', getDocumentById);
 router.get('/:id/download', downloadDocument);
 
-// Protected routes - authenticated users can upload
+/**
+ * Rotas protegidas de documentos (autenticado)
+ */
 router.post('/', authenticate, upload.single('file'), createDocument);
 router.put('/:id', authenticate, upload.single('file'), updateDocument);
 
-// Admin routes - only admins can delete
+/**
+ * Rotas de administração de documentos (apenas admin)
+ */
 router.delete('/:id', authenticate, requireAdmin, deleteDocument);
 
 export default router;

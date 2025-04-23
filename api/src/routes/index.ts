@@ -9,25 +9,27 @@ import multer from 'multer';
 
 const router = Router();
 
-// Setup multer for file uploads
+// Configuração do multer para upload de arquivos
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
+    fileSize: 10 * 1024 * 1024 // Limite de 10MB
   }
 });
 
-// Auth routes removidas - usaremos o router de autenticação específico em /api/auth
+/**
+ * Rotas de propriedades, categorias e documentos protegidas por autenticação/admin.
+ */
 
-// Property routes
+// Rotas de propriedades
 router.get('/properties', authMiddleware, propertyController.getAllProperties);
 router.get('/properties/:id', authMiddleware, propertyController.getPropertyById);
 router.post('/properties', authMiddleware, adminMiddleware, propertyController.createProperty);
 router.put('/properties/:id', authMiddleware, adminMiddleware, propertyController.updateProperty);
 router.delete('/properties/:id', authMiddleware, adminMiddleware, propertyController.deleteProperty);
 
-// Category routes
+// Rotas de categorias
 router.get('/categories', authMiddleware, categoryController.getAllCategories);
 router.get('/categories/:id', authMiddleware, categoryController.getCategoryById);
 router.post('/categories', authMiddleware, adminMiddleware, categoryController.createCategory);
@@ -35,7 +37,7 @@ router.put('/categories/:id', authMiddleware, adminMiddleware, categoryControlle
 router.delete('/categories/:id', authMiddleware, adminMiddleware, categoryController.deleteCategory);
 router.put('/categories-order', authMiddleware, adminMiddleware, categoryController.updateCategoriesOrder);
 
-// Document routes
+// Rotas de documentos
 router.get('/documents', authMiddleware, documentController.getAllDocuments);
 router.get('/documents/:id', authMiddleware, documentController.getDocumentById);
 router.post('/documents', authMiddleware, upload.single('file'), documentController.createDocument);

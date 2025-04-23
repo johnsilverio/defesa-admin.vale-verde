@@ -21,7 +21,8 @@ const CONFIG = {
 };
 
 /**
- * Run the initialization scripts in sequence
+ * Script de configuração inicial do sistema DefesaAdmin.
+ * Cria propriedade, categorias padrão, usuário admin e estrutura de pastas.
  */
 async function runSetup() {
   let connection = null;
@@ -154,4 +155,4 @@ runSetup()
   .catch(error => {
     console.error('Erro fatal durante a execução do script:', error);
     process.exit(1);
-  }); 
+  });
