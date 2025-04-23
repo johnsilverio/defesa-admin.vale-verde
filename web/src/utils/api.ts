@@ -53,9 +53,16 @@ export function getToken(): string | null {
   
   // Se não estiver na memória, tenta do localStorage (para persistência entre recarregamentos)
   if (typeof window !== 'undefined') {
+    // Primeiro tenta 'auth_token' que é usado pelo AuthContext
+    const authToken = localStorage.getItem('auth_token');
+    if (authToken) {
+      inMemoryToken = authToken;
+      return authToken;
+    }
+    
+    // Como fallback, tenta o nome antigo 'token'
     const token = localStorage.getItem('token');
     if (token) {
-      // Se for encontrado no localStorage, colocar na memória também
       inMemoryToken = token;
       return token;
     }
@@ -67,9 +74,15 @@ export function getToken(): string | null {
 export function saveAuthData(data: AuthResponse): void {
   inMemoryToken = data.accessToken;
   if (typeof window !== 'undefined') {
+    // Salvar o token com o mesmo nome usado pelo AuthContext
+    localStorage.setItem('auth_token', data.accessToken);
+    
     if (data.refreshToken) {
       localStorage.setItem('refreshToken', data.refreshToken);
+      // Também salvar com o nome usado pelo AuthContext
+      localStorage.setItem('refresh_token', data.refreshToken);
     }
+    
     localStorage.setItem('user', JSON.stringify(data.user));
   }
 }
@@ -77,8 +90,11 @@ export function saveAuthData(data: AuthResponse): void {
 function clearAuthData(): void {
   inMemoryToken = null;
   if (typeof window !== 'undefined') {
+    // Limpar todos os possíveis locais de armazenamento do token
     localStorage.removeItem('token');
+    localStorage.removeItem('auth_token');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
   }
 }
@@ -101,23 +117,33 @@ async function refreshAccessToken(): Promise<string> {
   }
   refreshTokenInProgress = (async () => {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
+      // Tenta ambos os nomes de chaves para o refresh token
+      const refreshToken = localStorage.getItem('refresh_token') || localStorage.getItem('refreshToken');
       if (!refreshToken) throw new Error('Refresh token não disponível');
+      
       const response = await fetch(`${API_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
         credentials: 'include',
       });
+      
       if (!response.ok) {
         clearAuthData();
         throw new Error('Falha ao atualizar o token');
       }
+      
       const data: RefreshResponse = await response.json();
       inMemoryToken = data.accessToken;
+      
+      // Salva com ambos os nomes para garantir compatibilidade
+      localStorage.setItem('auth_token', data.accessToken);
+      
       if (data.refreshToken) {
+        localStorage.setItem('refresh_token', data.refreshToken);
         localStorage.setItem('refreshToken', data.refreshToken);
       }
+      
       return data.accessToken;
     } catch (error) {
       clearAuthData();

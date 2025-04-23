@@ -190,6 +190,45 @@ export default function ImportantDocumentsCarousel() {
     }
   };
 
+  // Função para baixar um documento
+  const downloadDocument = async (docId: string, fileName: string) => {
+    try {
+      if (docId.startsWith('doc')) {
+        // Documentos estáticos (mock) quando não está autenticado
+        // Mostrar mensagem que documentos reais requerem login
+        alert('Para acessar os documentos reais, é necessário fazer login. Este é apenas um exemplo.');
+        return;
+      }
+
+      // Para documentos reais da API
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
+      const response = await fetch(`/api/documents/${docId}/download`, { headers });
+      
+      if (!response.ok) {
+        throw new Error('Falha ao obter URL de download');
+      }
+      
+      const data = await response.json();
+      if (data && data.url) {
+        // Criar um elemento anchor temporário para realizar o download
+        const a = document.createElement('a');
+        a.href = data.url;
+        a.download = fileName; // Nome do arquivo para download
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('Erro ao fazer download do documento:', error);
+      alert('Não foi possível fazer o download do documento. Por favor, tente novamente.');
+    }
+  };
+
   // Renderizar mensagem de carregamento
   if (loading) {
     return (
@@ -257,14 +296,13 @@ export default function ImportantDocumentsCarousel() {
               <div className="document-tag document-tag-important">Destacado</div>
               <h3>{doc.title}</h3>
               <p>{doc.description || 'Sem descrição'}</p>
-              <Link 
-                href={doc._id.startsWith('doc') ? doc.filePath : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/documents/${doc._id}/download`} 
+              <button 
+                onClick={() => downloadDocument(doc._id, doc.originalFileName)}
                 className="btn btn-secondary w-full"
-                download
               >
                 <FiDownload className="h-5 w-5 mr-2" />
                 Download
-              </Link>
+              </button>
             </div>
           ))}
         </div>

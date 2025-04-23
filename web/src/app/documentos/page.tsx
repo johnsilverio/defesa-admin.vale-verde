@@ -151,6 +151,26 @@ export default function DocumentosPage() {
     </div>
   );
   
+  // Função para baixar um documento
+  const downloadDocument = async (docId: string, fileName: string) => {
+    try {
+      const result = await apiRequest<{url: string}>(`/api/documents/${docId}/download`);
+      if (result && result.url) {
+        // Criar um elemento anchor temporário para realizar o download
+        const a = document.createElement('a');
+        a.href = result.url;
+        a.download = fileName; // Nome do arquivo para download
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('Erro ao fazer download do documento:', error);
+      alert('Não foi possível fazer o download do documento. Por favor, tente novamente.');
+    }
+  };
+  
   // Function to render document card
   const renderDocumentCard = (doc: Document) => (
     <div 
@@ -168,16 +188,15 @@ export default function DocumentosPage() {
       )}
       <h3>{doc.title}</h3>
       <p>{doc.description}</p>
-      <a 
-        href={`/api/documents/${doc._id}/download`} 
+      <button 
+        onClick={() => downloadDocument(doc._id, doc.originalFileName)}
         className={`btn ${doc.isHighlighted ? 'btn-primary' : 'btn-secondary'} w-full`}
-        download={doc.originalFileName}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
           <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
         </svg>
         Download
-      </a>
+      </button>
     </div>
   );
   
