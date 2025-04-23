@@ -72,8 +72,6 @@ export default function NewDocument() {
     try {
       // In a real application, you would upload the file to your server/storage
       // For this demonstration, we'll just simulate a successful upload
-      console.log('Form Data:', formData);
-      console.log('File:', file);
       
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1500));

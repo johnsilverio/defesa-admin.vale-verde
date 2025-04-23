@@ -69,13 +69,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string, role?: string }> => {
     try {
       setIsLoading(true);
-      console.log('Tentando login com:', email);
       const { data } = await axios.post(`/api/auth/login`, {
         email,
         password
       });
-      
-      console.log('Resposta do login:', data);
       
       if (!data.accessToken || !data.user) {
         return { success: false, message: 'Resposta de login inválida do servidor' };

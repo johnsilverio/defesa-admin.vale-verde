@@ -61,23 +61,17 @@ export default function AdminLogin() {
     }
 
     try {
-      console.log('Tentando login administrativo com:', email);
-      
       // If already logged in as a regular user, log them out first
       if (user && user.role !== 'admin') {
-        console.log('Usuário logado como usuário regular, fazendo logout primeiro');
         await logout();
       }
 
       // Then perform the login
       const result = await login(email, password);
-      console.log('Resultado do login:', result);
       
       if (result.success) {
         // Only redirect to admin if the user is an admin
         if (result.role === 'admin') {
-          console.log('Login administrativo bem-sucedido, redirecionando para /admin');
-          
           // Salvar estado de login antes de redirecionar
           localStorage.setItem('adminAuthenticated', 'true');
           

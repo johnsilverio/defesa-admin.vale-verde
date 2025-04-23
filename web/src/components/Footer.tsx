@@ -147,7 +147,6 @@ export default function Footer() {
         
         <div className="copyright mt-10 pt-6 border-t border-white border-opacity-20 text-center">
           <p className="text-sm text-white">&copy; {currentYear} Vale Verde. Todos os direitos reservados.</p>
-          <p className="text-xs text-white/80 mt-2">Defesa Administrativa - Sistema para Gestão de Defesas contra Notificações da FUNAI</p>
         </div>
       </div>
     </footer>

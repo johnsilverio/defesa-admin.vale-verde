@@ -52,9 +52,7 @@ export default function Login() {
     }
 
     try {
-      console.log('Tentando login de usuário com:', email);
       const result = await login(email, password);
-      console.log('Resultado do login:', result);
       
       if (result.success) {
         // Feedback visual de sucesso antes do redirecionamento
@@ -63,10 +61,8 @@ export default function Login() {
         
         // Determinar para onde redirecionar com base no papel do usuário
         if (result.role === 'admin') {
-          console.log('Redirecionando administrador para o painel');
           router.push('/admin');
         } else {
-          console.log('Redirecionando usuário para a página inicial');
           // Usuários normais vão para a página inicial da propriedade
           router.push('/');
         }

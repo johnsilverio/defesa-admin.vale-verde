@@ -6,10 +6,6 @@ const API_URL = process.env.NEXT_PUBLIC_ENV === 'production'
   : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
 const ENV = process.env.NEXT_PUBLIC_ENV || 'development';
 
-if (ENV === 'development' && typeof window !== 'undefined') {
-  console.log(`API configurada para: ${API_URL} (${ENV})`);
-}
-
 interface RequestOptions extends RequestInit {
   token?: string;
   data?: any;

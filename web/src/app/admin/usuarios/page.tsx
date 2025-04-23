@@ -81,7 +81,6 @@ export default function UsersPage() {
       }));
       
       setUsers(validUsers);
-      console.log('Usuários carregados:', validUsers);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
       toast.error('Erro ao carregar usuários');
