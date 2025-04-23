@@ -1,7 +1,13 @@
 {
   "version": 2,
   "builds": [
-    { "src": "src/server.ts", "use": "@vercel/node" }
+    { 
+      "src": "package.json", 
+      "use": "@vercel/node",
+      "config": { 
+        "buildCommand": "npm run build:prod" 
+      }
+    }
   ],
   "routes": [
     {
@@ -12,11 +18,13 @@
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
         "Access-Control-Allow-Credentials": "true"
       },
+      "dest": "/server.js",
       "continue": true
     },
     { 
       "src": "/(.*)", 
-      "dest": "/src/server.ts"
+      "dest": "/server.js"
     }
-  ]
+  ],
+  "outputDirectory": "dist"
 }
