@@ -101,31 +101,49 @@ export default function LinhaDoTempoPage() {
   ];
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('animate');
-          }
+    // Pequeno atraso para garantir que o DOM está completamente renderizado
+    const timer = setTimeout(() => {
+      const timelineItems = document.querySelectorAll('.timeline-container');
+      
+      // Se não houver suporte ao IntersectionObserver ou se os itens não forem encontrados,
+      // torne-os visíveis imediatamente
+      if (!window.IntersectionObserver || timelineItems.length === 0) {
+        document.querySelectorAll('.timeline-container').forEach((item) => {
+          (item as HTMLElement).style.opacity = '1';
+          (item as HTMLElement).style.transform = 'translateY(0)';
         });
-      },
-      {
-        root: null,
-        rootMargin: '0px',
-        threshold: 0.1,
+        return;
       }
-    );
 
-    const timelineItems = document.querySelectorAll('.timeline-container');
-    timelineItems.forEach((item) => {
-      observer.observe(item);
-    });
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('animate');
+            }
+          });
+        },
+        {
+          root: null,
+          rootMargin: '0px',
+          threshold: 0.1,
+        }
+      );
 
-    return () => {
       timelineItems.forEach((item) => {
-        observer.unobserve(item);
+        observer.observe(item);
       });
-    };
+
+      return () => {
+        if (observer) {
+          timelineItems.forEach((item) => {
+            observer.unobserve(item);
+          });
+        }
+      };
+    }, 100); // Pequeno delay para garantir que os elementos existam
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -177,4 +195,4 @@ export default function LinhaDoTempoPage() {
       </section>
     </ContentPageLayout>
   );
-} 
+}

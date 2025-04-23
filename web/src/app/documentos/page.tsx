@@ -155,14 +155,24 @@ export default function DocumentosPage() {
   const downloadDocument = async (docId: string, fileName: string) => {
     try {
       const result = await apiRequest<{url: string}>(`/api/documents/${docId}/download`);
+      
       if (result && result.url) {
-        // Criar um elemento anchor temporário para realizar o download
+        // Baixar o arquivo usando fetch em vez de redirecionar
+        const fileResponse = await fetch(result.url);
+        const blob = await fileResponse.blob();
+        
+        // Criar URL do blob e iniciar download
+        const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = result.url;
-        a.download = fileName; // Nome do arquivo para download
         a.style.display = 'none';
+        a.href = url;
+        a.download = fileName;
+        
         document.body.appendChild(a);
         a.click();
+        
+        // Limpar
+        window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       }
     } catch (error) {

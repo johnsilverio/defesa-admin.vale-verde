@@ -162,7 +162,7 @@ export default function Header() {
             {isUserMenuOpen && (
               <div className="absolute right-0 mt-2 py-2 w-48 bg-white rounded-md shadow-[var(--shadow-md)] z-20 animate-fadeIn border border-[var(--border)]">
                 <Link 
-                  href="/configuracoes"
+                  href={isAdmin ? "/admin/configuracoes" : "/configuracoes"}
                   className="flex items-center px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--primary-50)] hover:text-[var(--primary-dark)]"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -305,4 +305,4 @@ export default function Header() {
       </div>
     </header>
   );
-} 
+}

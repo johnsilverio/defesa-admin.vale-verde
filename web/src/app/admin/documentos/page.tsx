@@ -247,7 +247,7 @@ export default function DocumentsPage() {
     });
     
     // Limpar o input de arquivo
-    const fileInput = document.getElementById('file-input') as HTMLInputElement;
+    const fileInput = window.document.getElementById('file-input') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
   };
   
@@ -427,21 +427,42 @@ export default function DocumentsPage() {
     }
   };
 
-  const downloadDocument = (documentId: string) => {
+  const downloadDocument = async (documentId: string) => {
     if (!token) return;
     
-    // Create a hidden anchor element
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = `${process.env.NEXT_PUBLIC_API_URL}/api/documents/${documentId}/download`;
-    a.setAttribute('download', 'true');
-    
-    // Add authorization header
-    // This won't work directly - actual download should be handled through a fetch and blob
-    // But for simplicity, we'll redirect to a signed URL
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try {
+      // Obter a URL assinada do documento
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/documents/${documentId}/download`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data && response.data.url) {
+        // Obter o nome original do arquivo
+        const documentItem = documents.find(doc => doc._id === documentId);
+        const fileName = documentItem?.originalFileName || 'documento';
+        
+        // Baixar o arquivo usando fetch
+        const fileResponse = await fetch(response.data.url);
+        const blob = await fileResponse.blob();
+        
+        // Criar URL do blob e iniciar download
+        const url = window.URL.createObjectURL(blob);
+        const a = window.document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = fileName;
+        
+        window.document.body.appendChild(a);
+        a.click();
+        
+        // Limpar
+        window.URL.revokeObjectURL(url);
+        window.document.body.removeChild(a);
+      }
+    } catch (err) {
+      console.error('Erro ao baixar documento:', err);
+      setError('Não foi possível baixar o documento. Por favor, tente novamente.');
+    }
   };
   
   const getPropertyName = (property: string | { _id: string; name: string; slug: string }) => {
@@ -724,7 +745,7 @@ export default function DocumentsPage() {
                           <button
                             type="button"
                             className="px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-dark)] transition-colors"
-                            onClick={() => document.getElementById('file-input')?.click()}
+                            onClick={() => window.document.getElementById('file-input')?.click()}
                           >
                             Escolher arquivo
                           </button>
@@ -766,7 +787,7 @@ export default function DocumentsPage() {
                           <button
                             type="button"
                             className="text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] transition-colors"
-                            onClick={() => document.getElementById('file-input')?.click()}
+                            onClick={() => window.document.getElementById('file-input')?.click()}
                           >
                             Trocar arquivo
                           </button>
@@ -845,7 +866,7 @@ export default function DocumentsPage() {
               ) : (
                 documents.map(doc => (
                   <tr key={doc._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4">
                       <div className="flex items-start">
                         <div className="text-sm font-medium text-gray-900 mb-1">{doc.title}</div>
                         <div>
@@ -856,7 +877,7 @@ export default function DocumentsPage() {
                           )}
                         </div>
                       </div>
-                      <div className="text-xs text-gray-500">{doc.description}</div>
+                      <div className="text-xs text-gray-500 max-w-sm overflow-hidden text-ellipsis">{doc.description}</div>
                       <div className="text-xs text-gray-500 mt-1">
                         <span className="font-medium">Arquivo:</span> {doc.originalFileName} ({formatFileSize(doc.fileSize)})
                       </div>

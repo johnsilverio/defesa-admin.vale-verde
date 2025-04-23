@@ -36,10 +36,10 @@ export default function HomePage() {
               Contestação à notificação da FUNAI para estudos demarcatórios da Terra Indígena Dourados-Amambaipeguá II
             </p>
             <div className="mt-8">
-              <a href="/documentos" className="btn btn-accent btn-lg mx-2 animate-fadeIn" style={{animationDelay: '0.3s'}}>
+              <a href="/documentos" className="btn btn-accent btn-lg mx-2 animate-fadeIn">
                 Ver Documentos
               </a>
-              <a href="/linha-do-tempo" className="btn btn-primary btn-lg mx-2 animate-fadeIn" style={{animationDelay: '0.5s'}}>
+              <a href="/linha-do-tempo" className="btn btn-primary btn-lg mx-2 animate-fadeIn">
                 Linha do Tempo
               </a>
             </div>

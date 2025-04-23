@@ -206,7 +206,7 @@ export default function ImportantDocumentsCarousel() {
         'Content-Type': 'application/json'
       };
       
-      const response = await fetch(`/api/documents/${docId}/download`, { headers });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/documents/${docId}/download`, { headers });
       
       if (!response.ok) {
         throw new Error('Falha ao obter URL de download');
@@ -214,13 +214,22 @@ export default function ImportantDocumentsCarousel() {
       
       const data = await response.json();
       if (data && data.url) {
-        // Criar um elemento anchor temporário para realizar o download
+        // Baixar o arquivo usando fetch em vez de redirecionar
+        const fileResponse = await fetch(data.url);
+        const blob = await fileResponse.blob();
+        
+        // Criar URL do blob e iniciar download
+        const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = data.url;
-        a.download = fileName; // Nome do arquivo para download
         a.style.display = 'none';
+        a.href = url;
+        a.download = fileName;
+        
         document.body.appendChild(a);
         a.click();
+        
+        // Limpar
+        window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       }
     } catch (error) {
