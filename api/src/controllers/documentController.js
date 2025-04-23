@@ -8,19 +8,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.downloadDocument = exports.deleteDocument = exports.updateDocument = exports.createDocument = exports.getDocumentById = exports.getAllDocuments = void 0;
 const zod_1 = require("zod");
-const path_1 = __importDefault(require("path"));
-const fs_1 = __importDefault(require("fs"));
 const document_1 = require("../models/document");
-const category_1 = require("../models/category");
-const property_1 = require("../models/property");
-const fileService_1 = require("../services/fileService");
-const fileService = new fileService_1.FileService();
+const slugify_1 = require("../utils/slugify");
+const storageService_1 = require("../services/storageService");
 const documentSchema = zod_1.z.object({
     title: zod_1.z.string().min(1, 'Título é obrigatório'),
     description: zod_1.z.string().optional(),
@@ -83,49 +76,30 @@ exports.getDocumentById = getDocumentById;
  * @route POST /api/documents
  */
 const createDocument = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'Arquivo não fornecido', code: 'FILE_REQUIRED' });
-        }
-        if (typeof req.body.isHighlighted === 'string') {
-            req.body.isHighlighted = req.body.isHighlighted === 'true';
-        }
-        const parseResult = documentSchema.safeParse(req.body);
-        if (!parseResult.success) {
-            return res.status(400).json({ error: 'Dados inválidos', details: parseResult.error.format() });
-        }
-        const { title, description, category, property, isHighlighted } = parseResult.data;
-        const propertyExists = yield property_1.Property.findOne({ $or: [{ _id: property }, { slug: property }] });
-        if (!propertyExists) {
-            return res.status(404).json({ error: 'Propriedade não encontrada', code: 'PROPERTY_NOT_FOUND' });
-        }
-        const categoryExists = yield category_1.Category.findOne({ $or: [{ _id: category }, { slug: category }], property: propertyExists.slug });
-        if (!categoryExists) {
-            return res.status(404).json({ error: 'Categoria não encontrada', code: 'CATEGORY_NOT_FOUND' });
-        }
-        try {
-            const { fileName, filePath } = yield fileService.saveFile(req.file, propertyExists.slug, categoryExists.slug);
-            const document = new document_1.Document({
-                title,
-                description,
-                fileName,
-                originalFileName: req.file.originalname,
-                fileSize: req.file.size,
-                fileType: req.file.mimetype,
-                filePath,
-                category: categoryExists._id,
-                property: propertyExists.slug,
-                uploadedBy: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id,
-                isHighlighted: isHighlighted || false
-            });
-            yield document.save();
-            res.status(201).json(document);
-        }
-        catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-            return res.status(500).json({ error: 'Falha ao salvar o arquivo', details: errorMessage });
-        }
+        const { title, description, category, property, isHighlighted } = req.body;
+        const userId = ((_a = req.user) === null || _a === void 0 ? void 0 : _a._id) || ((_b = req.user) === null || _b === void 0 ? void 0 : _b.id);
+        if (!req.file)
+            return res.status(400).json({ error: 'Arquivo é obrigatório' });
+        const normalizedFileName = (0, slugify_1.normalizeFileName)(req.file.originalname);
+        const filePath = `docs/${Date.now()}_${normalizedFileName}`;
+        yield (0, storageService_1.uploadFile)(filePath, req.file.buffer, req.file.mimetype);
+        const document = new document_1.Document({
+            title,
+            description,
+            category,
+            property,
+            isHighlighted: !!isHighlighted,
+            fileName: normalizedFileName,
+            originalFileName: req.file.originalname,
+            fileSize: req.file.size,
+            fileType: req.file.mimetype,
+            filePath,
+            uploadedBy: userId
+        });
+        yield document.save();
+        res.status(201).json(document);
     }
     catch (error) {
         next(error);
@@ -138,71 +112,40 @@ exports.createDocument = createDocument;
  */
 const updateDocument = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        if (typeof req.body.isHighlighted === 'string') {
-            req.body.isHighlighted = req.body.isHighlighted === 'true';
-        }
-        const parseResult = documentSchema.safeParse(req.body);
-        if (!parseResult.success) {
-            return res.status(400).json({ error: 'Invalid data', details: parseResult.error.format() });
-        }
-        const { title, description, category, property, isHighlighted } = parseResult.data;
-        const existingDocument = yield document_1.Document.findById(req.params.id);
-        if (!existingDocument) {
-            return res.status(404).json({ error: 'Document not found' });
-        }
-        const propertyExists = yield property_1.Property.findOne({ $or: [{ _id: property }, { slug: property }] });
-        if (!propertyExists) {
-            return res.status(404).json({ error: 'Property not found', code: 'PROPERTY_NOT_FOUND' });
-        }
-        const categoryExists = yield category_1.Category.findOne({ $or: [{ _id: category }, { slug: category }], property: propertyExists.slug });
-        if (!categoryExists) {
-            return res.status(404).json({ error: 'Category not found', code: 'CATEGORY_NOT_FOUND' });
-        }
-        const updateData = {
-            title,
-            description,
-            category: categoryExists._id,
-            property: propertyExists.slug,
-            isHighlighted: isHighlighted || false,
-            updatedAt: new Date()
-        };
+        const { title, description, category, property, isHighlighted } = req.body;
+        const document = yield document_1.Document.findById(req.params.id);
+        if (!document)
+            return res.status(404).json({ error: 'Documento não encontrado' });
+        // Se houver novo arquivo, faz upload no Supabase e remove o antigo
         if (req.file) {
-            try {
-                yield fileService.ensureDirectoryExists(propertyExists.slug, categoryExists.slug);
-                yield fileService.deleteFile(existingDocument.filePath);
-                const { fileName, filePath } = yield fileService.saveFile(req.file, propertyExists.slug, categoryExists.slug);
-                updateData.fileName = fileName;
-                updateData.originalFileName = req.file.originalname;
-                updateData.fileSize = req.file.size;
-                updateData.fileType = req.file.mimetype;
-                updateData.filePath = filePath;
+            // Remove arquivo antigo do Supabase
+            if (document.filePath) {
+                yield (0, storageService_1.deleteFile)(document.filePath);
             }
-            catch (fileError) {
-                const errorMessage = fileError instanceof Error ? fileError.message : 'Unknown error';
-                return res.status(500).json({ error: 'Failed to process file', details: errorMessage });
-            }
+            const normalizedFileName = (0, slugify_1.normalizeFileName)(req.file.originalname);
+            const filePath = `docs/${Date.now()}_${normalizedFileName}`;
+            yield (0, storageService_1.uploadFile)(filePath, req.file.buffer, req.file.mimetype);
+            document.fileName = normalizedFileName;
+            document.originalFileName = req.file.originalname;
+            document.fileSize = req.file.size;
+            document.fileType = req.file.mimetype;
+            document.filePath = filePath;
         }
-        else if (existingDocument.category.toString() !== categoryExists._id.toString()) {
-            try {
-                yield fileService.ensureDirectoryExists(propertyExists.slug, categoryExists.slug);
-                const oldFilePath = existingDocument.filePath;
-                const fileName = path_1.default.basename(oldFilePath);
-                const newFilePath = path_1.default.join(propertyExists.slug, categoryExists.slug, fileName);
-                yield fileService.moveFile(oldFilePath, newFilePath);
-                updateData.filePath = newFilePath;
-            }
-            catch (moveError) {
-                const errorMessage = moveError instanceof Error ? moveError.message : 'Unknown error';
-                return res.status(500).json({ error: 'Failed to move file to new category', details: errorMessage });
-            }
-        }
-        const updatedDocument = yield document_1.Document.findByIdAndUpdate(req.params.id, updateData, { new: true }).populate('category', 'name slug')
-            .populate('uploadedBy', 'name email');
-        res.json(updatedDocument);
+        if (title)
+            document.title = title;
+        if (description !== undefined)
+            document.description = description;
+        if (category)
+            document.category = category;
+        if (property)
+            document.property = property;
+        if (isHighlighted !== undefined)
+            document.isHighlighted = isHighlighted;
+        yield document.save();
+        res.json(document);
     }
     catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        return res.status(500).json({ error: 'Failed to update document', details: errorMessage });
+        next(error);
     }
 });
 exports.updateDocument = updateDocument;
@@ -213,16 +156,17 @@ exports.updateDocument = updateDocument;
 const deleteDocument = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const document = yield document_1.Document.findById(req.params.id);
-        if (!document) {
-            return res.status(404).json({ error: 'Document not found' });
+        if (!document)
+            return res.status(404).json({ error: 'Documento não encontrado' });
+        // Remove arquivo do Supabase
+        if (document.filePath) {
+            yield (0, storageService_1.deleteFile)(document.filePath);
         }
-        yield fileService.deleteFile(document.filePath);
-        yield document_1.Document.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Document deleted successfully' });
+        yield document.deleteOne();
+        res.json({ success: true });
     }
     catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        return res.status(500).json({ error: 'Failed to delete document', details: errorMessage });
+        next(error);
     }
 });
 exports.deleteDocument = deleteDocument;
@@ -233,16 +177,11 @@ exports.deleteDocument = deleteDocument;
 const downloadDocument = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const document = yield document_1.Document.findById(req.params.id);
-        if (!document) {
-            return res.status(404).json({ error: 'Document not found' });
-        }
-        const filePath = fileService.getFullPath(document.filePath);
-        if (!fs_1.default.existsSync(filePath)) {
-            return res.status(404).json({ error: 'Arquivo não encontrado' });
-        }
-        res.setHeader('Content-Disposition', `attachment; filename="${document.originalFileName}"`);
-        res.setHeader('Content-Type', document.fileType);
-        res.sendFile(filePath);
+        if (!document)
+            return res.status(404).json({ error: 'Documento não encontrado' });
+        // Gera URL temporário do Supabase
+        const url = yield (0, storageService_1.getFileUrl)(document.filePath);
+        res.json({ url });
     }
     catch (error) {
         next(error);

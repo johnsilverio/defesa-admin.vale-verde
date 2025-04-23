@@ -101,7 +101,7 @@ app.use('/api/documents', documents_1.default);
 // Rota principal
 app.get('/', (req, res) => {
     res.json({
-        name: 'API Fazenda Brilhante',
+        name: 'API Vale Verde',
         version: '1.0.0',
         status: 'running',
         environment: process.env.NODE_ENV || 'development'
