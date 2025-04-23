@@ -155,12 +155,8 @@ async function runSetup() {
       // Criação da estrutura no Supabase
       console.log('🔷 Criando estrutura no Supabase...');
       
-      // Pasta raiz para documentos
-      await createFolder('documentos');
-      console.log('✅ Pasta raiz "documentos" criada/verificada no Supabase');
-      
       // Pasta para a propriedade
-      const supabasePropertyPath = `documentos/${propertySlug}`;
+      const supabasePropertyPath = `${propertySlug}`;
       await createFolder(supabasePropertyPath);
       console.log(`✅ Pasta da propriedade criada/verificada: ${supabasePropertyPath}`);
       

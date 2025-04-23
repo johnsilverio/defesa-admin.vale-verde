@@ -109,19 +109,23 @@ export async function createFolder(folderPath: string) {
     if (!supabase || !bucket) {
       throw new Error('Supabase não está configurado corretamente para criar pastas');
     }
-    
     // Certifique-se de que o caminho termina com /
     const normalizedPath = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
-    
     // Cria um arquivo vazio para simular uma pasta
     const emptyBuffer = Buffer.from('');
-    const { data, error } = await supabase.storage.from(bucket).upload(`${normalizedPath}.folder`, emptyBuffer, {
-      contentType: 'application/x-directory',
-      upsert: true
-    });
-    
-    if (error) throw error;
-    return data;
+    console.log('[DEBUG][createFolder] Bucket:', bucket, 'Path:', `${normalizedPath}.folder`);
+    try {
+      const { data, error } = await supabase.storage.from(bucket).upload(`${normalizedPath}.folder`, emptyBuffer, {
+        contentType: 'application/x-directory',
+        upsert: true
+      });
+      console.log('[DEBUG][createFolder] Resultado upload:', data, error);
+      if (error) throw error;
+      return data;
+    } catch (err) {
+      console.error('[DEBUG][createFolder] Erro ao criar pasta:', err);
+      throw err;
+    }
   } else {
     // Criação de pasta no sistema de arquivos local
     const fullPath = path.join(localStoragePath, folderPath);
