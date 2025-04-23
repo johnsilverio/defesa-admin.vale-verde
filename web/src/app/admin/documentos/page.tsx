@@ -21,7 +21,11 @@ interface Document {
     name: string;
     slug: string;
   };
-  property: string;
+  property: {
+    _id: string;
+    name: string;
+    slug: string;
+  } | string; // Pode ser string (slug) ou objeto completo dependendo do contexto
   uploadedBy: {
     _id: string;
     name: string;
@@ -177,11 +181,16 @@ export default function DocumentsPage() {
   };
   
   const openEditForm = (document: Document) => {
-    // Find the matching property
-    const propertyObj = properties.find(p => p.slug === document.property);
+    // Determinar o valor da propriedade para encontrar o objeto correspondente
+    const propertySlug = typeof document.property === 'string' 
+      ? document.property 
+      : document.property.slug;
+    
+    // Encontrar a propriedade usando o slug
+    const propertyObj = properties.find(p => p.slug === propertySlug);
     
     if (!propertyObj) {
-      setError('Propriedade do documento não encontrada');
+      setError(`Propriedade do documento não encontrada (slug: ${propertySlug})`);
       return;
     }
     
@@ -205,12 +214,21 @@ export default function DocumentsPage() {
   };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
+    const { name, value, type, checked } = e.target as HTMLInputElement;
     
-    setFormData({
-      ...formData,
-      [e.target.name]: value
-    });
+    // Para inputs do tipo checkbox, usar o valor de "checked"
+    if (type === 'checkbox') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked
+      }));
+    } else {
+      // Para outros tipos de inputs, usar o value
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -426,9 +444,14 @@ export default function DocumentsPage() {
     document.body.removeChild(a);
   };
   
-  const getPropertyName = (slug: string) => {
-    const property = properties.find(p => p.slug === slug);
-    return property ? property.name : slug;
+  const getPropertyName = (property: string | { _id: string; name: string; slug: string }) => {
+    if (typeof property === 'object' && property !== null) {
+      return property.name;
+    }
+    
+    // Caso receba apenas o slug da propriedade
+    const propertyObj = properties.find(p => p.slug === property);
+    return propertyObj ? propertyObj.name : property;
   };
   
   const formatFileSize = (bytes: number) => {
@@ -886,4 +909,4 @@ export default function DocumentsPage() {
       </div>
     </div>
   );
-} 
+}

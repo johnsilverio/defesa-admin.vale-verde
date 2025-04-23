@@ -94,8 +94,9 @@ export const createDocument: AnyRequestHandler = async (req, res, next) => {
       title,
       description,
       category: categoryId,
-      property: propertyId,
-      isHighlighted: !!isHighlighted,
+      // Armazenar o slug da propriedade em vez do ID para consistência
+      property: property.slug,
+      isHighlighted: isHighlighted === 'true' || isHighlighted === true,
       fileName: normalizedFileName,
       originalFileName: req.file.originalname,
       fileSize: req.file.size,
@@ -120,59 +121,91 @@ export const updateDocument: AnyRequestHandler = async (req, res, next) => {
     const document = await Document.findById(req.params.id);
     if (!document) return res.status(404).json({ error: 'Documento não encontrado' });
 
-    // Se houver novo arquivo ou mudança de categoria/propriedade
-    if (req.file || 
-        (categoryId && categoryId !== document.category.toString()) || 
-        (propertyId && propertyId !== document.property.toString())) {
-      
-      // Buscar informações atualizadas de categoria e propriedade
-      const category = await Category.findById(categoryId || document.category);
-      const property = await Property.findById(propertyId || document.property);
-      
-      if (!category || !property) {
+    // Buscar informações da categoria (sempre necessário)
+    const category = await Category.findById(categoryId || document.category);
+    
+    // Buscar informações da propriedade (apenas se houver mudança ou arquivo novo)
+    let property;
+    if (propertyId) {
+      property = await Property.findById(propertyId);
+      if (!property) {
+        return res.status(400).json({ 
+          error: 'Propriedade inválida',
+          details: 'Propriedade não encontrada'
+        });
+      }
+    }
+
+    // Se houver novo arquivo
+    if (req.file) {
+      // Se não encontrou a categoria ou não temos propriedade e nem foi enviada
+      if (!category || (!property && !propertyId)) {
         return res.status(400).json({ 
           error: 'Categoria ou propriedade inválida',
-          details: !category ? 'Categoria não encontrada' : 'Propriedade não encontrada'
+          details: !category ? 'Categoria não encontrada' : 'Propriedade necessária para upload'
         });
       }
 
-      // Se houver novo arquivo
-      if (req.file) {
-        // Remove arquivo antigo do Supabase
-        if (document.filePath) {
-          await deleteFile(document.filePath);
+      // Remove arquivo antigo do Supabase
+      if (document.filePath) {
+        await deleteFile(document.filePath);
+      }
+      
+      // Se não temos property (objeto) mas temos propertyId, precisamos buscar o property
+      if (!property && propertyId) {
+        property = await Property.findById(propertyId);
+        if (!property) {
+          return res.status(400).json({ 
+            error: 'Propriedade inválida',
+            details: 'Propriedade não encontrada'
+          });
+        }
+      } else if (!property) {
+        // Se não temos property nem propertyId, tentamos buscar pela propriedade atual
+        // Se document.property for uma string (slug), usamos o slug para buscar
+        if (typeof document.property === 'string') {
+          property = await Property.findOne({ slug: document.property });
         }
         
-        const normalizedFileName = normalizeFileName(req.file.originalname);
-        const timestamp = Date.now();
-        const filePath = `documentos/${property.slug}/${category.slug}/${timestamp}_${normalizedFileName}`;
-        
-        await uploadFile(filePath, req.file.buffer, req.file.mimetype);
-        
-        document.fileName = normalizedFileName;
-        document.originalFileName = req.file.originalname;
-        document.fileSize = req.file.size;
-        document.fileType = req.file.mimetype;
-        document.filePath = filePath;
-      } 
-      // Se apenas a categoria ou propriedade mudou, mover o arquivo para o novo local
-      else if ((categoryId && categoryId !== document.category.toString()) || 
-               (propertyId && propertyId !== document.property.toString())) {
-        
-        // Implementar a movimentação do arquivo no Supabase em uma versão futura
-        // Por enquanto, notificamos que o arquivo permanece no local original
-        console.log('Aviso: A mudança de categoria/propriedade não move automaticamente os arquivos existentes');
+        if (!property) {
+          return res.status(400).json({ 
+            error: 'Propriedade inválida',
+            details: 'Não foi possível determinar a propriedade para o novo arquivo'
+          });
+        }
       }
-    }
+      
+      const normalizedFileName = normalizeFileName(req.file.originalname);
+      const timestamp = Date.now();
+      const filePath = `documentos/${property.slug}/${category.slug}/${timestamp}_${normalizedFileName}`;
+      
+      await uploadFile(filePath, req.file.buffer, req.file.mimetype);
+      
+      document.fileName = normalizedFileName;
+      document.originalFileName = req.file.originalname;
+      document.fileSize = req.file.size;
+      document.fileType = req.file.mimetype;
+      document.filePath = filePath;
+    } 
     
     if (title) document.title = title;
     if (description !== undefined) document.description = description;
     if (categoryId) document.category = categoryId;
-    if (propertyId) document.property = propertyId;
-    if (isHighlighted !== undefined) document.isHighlighted = isHighlighted;
+    if (propertyId && property) document.property = property.slug; // Armazenar slug
+    
+    // Tratar o valor de isHighlighted corretamente
+    if (isHighlighted !== undefined) {
+      document.isHighlighted = isHighlighted === 'true' || isHighlighted === true;
+    }
     
     await document.save();
-    res.json(document);
+    
+    // Retornar o documento com as relações populadas
+    const updatedDocument = await Document.findById(document._id)
+      .populate('category', 'name slug')
+      .populate('uploadedBy', 'name email');
+      
+    res.json(updatedDocument);
   } catch (error) {
     next(error);
   }
