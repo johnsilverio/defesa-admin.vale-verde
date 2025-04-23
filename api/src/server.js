@@ -53,13 +53,18 @@ app.use((0, cors_1.default)({
         if (!origin) {
             return callback(null, true);
         }
+        // Permitir explicitamente o domínio principal
+        if (origin === 'https://valeverdedefesa.vercel.app') {
+            return callback(null, true);
+        }
         // Verificar se a origem está na lista de permitidos
         if (corsOrigins.indexOf(origin) !== -1 || corsOrigins.includes('*')) {
             callback(null, true);
         }
         else {
             console.log(`Origem bloqueada por CORS: ${origin}`);
-            callback(new Error(`Origem não permitida: ${origin}`), false);
+            // Não envie um erro, apenas false, para que o CORS responda normalmente
+            callback(null, false);
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
