@@ -20,8 +20,33 @@ dotenv.config();
 // Configuração do CORS
 const app = express();
 
+// Permitir múltiplos origens para CORS
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://valeverde.defesa.vercel.app',
+  'https://valeverdedefesa.vercel.app',
+  // Adicione outros domínios conforme necessário
+];
+
+// Use a string do env se fornecida, ou a lista padrão
+const originsString = process.env.CORS_ORIGIN || '';
+const corsOrigins = originsString 
+  ? originsString.split(',') 
+  : allowedOrigins;
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: function(origin, callback) {
+    // Permitir requisições sem origin (ex: mobile apps, curl)
+    if (!origin) return callback(null, true);
+    
+    // Verificar se a origem está na lista de permitidos
+    if (corsOrigins.indexOf(origin) !== -1 || corsOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      console.log(`Origem bloqueada por CORS: ${origin}`);
+      callback(null, false);
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With'],
   exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
@@ -51,8 +76,15 @@ app.use(helmet({
   contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false
 }));
 
-// Rota para favicon.ico e favicon.png para evitar logs 404
-app.get(['/favicon.ico', '/favicon.png'], (req, res) => res.status(204).end());
+// Rotas para favicon.ico e favicon.png para evitar logs 404
+app.get('/favicon.ico', (req: Request, res: Response) => {
+  res.status(204).end();
+});
+
+app.get('/favicon.png', (req: Request, res: Response) => {
+  res.status(204).end();
+});
+
 // Configuração de rate limits
 const DISABLE_RATE_LIMITS = process.env.DISABLE_RATE_LIMITS === 'true' || process.env.NODE_ENV !== 'production';
 
@@ -169,7 +201,7 @@ connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`API rodando na porta ${PORT}`);
     console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`CORS permitido para: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
+    console.log(`CORS permitido para: ${corsOrigins.join(', ')}`);
     if (DISABLE_RATE_LIMITS) {
       console.log('⚠️ Rate limiting desativado');
     }
