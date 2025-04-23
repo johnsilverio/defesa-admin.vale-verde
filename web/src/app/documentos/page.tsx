@@ -52,7 +52,7 @@ export default function DocumentosPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [totalSlides, setTotalSlides] = useState(0);
   
-  // Fetch documents from API
+  // Busca documentos e categorias da API
   useEffect(() => {
     setLoading(true);
     const fetchData = async () => {

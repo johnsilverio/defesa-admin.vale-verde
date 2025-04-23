@@ -30,32 +30,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Check if user is logged in
+    // Verifica autenticação inicial ao montar
   useEffect(() => {
     const checkAuth = async () => {
       const storedToken = localStorage.getItem('auth_token');
-      
       if (storedToken) {
         setToken(storedToken);
         try {
-          console.log('Validando token armazenado');
           const { data } = await axios.get(`/api/auth/me`, {
             headers: { Authorization: `Bearer ${storedToken}` },
-            // Adicionar timeout para evitar espera infinita
             timeout: 5000
           });
-          
           if (data.user) {
-            console.log('Usuário autenticado:', data.user);
             setUser(data.user);
-            
-            // Armazenar email do usuário para identificação na página de gerenciamento
             if (data.user.email) {
               localStorage.setItem('user_email', data.user.email);
             }
-            
-            // Configurar cookie para autenticação alternativa
-            
             document.cookie = `authToken=${storedToken}; path=/; max-age=${60*60*24*7}; SameSite=Strict`;
           } else {
             console.error('Resposta de validação inválida:', data);
@@ -87,38 +77,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('Resposta do login:', data);
       
-      // Verificar se recebemos os dados esperados
       if (!data.accessToken || !data.user) {
-        console.error('Resposta de login inválida:', data);
         return { success: false, message: 'Resposta de login inválida do servidor' };
       }
-      
       setUser(data.user);
       setToken(data.accessToken);
       localStorage.setItem('auth_token', data.accessToken);
-      
-      // Armazenar email do usuário para identificação na página de gerenciamento
       if (data.user.email) {
         localStorage.setItem('user_email', data.user.email);
       }
-      
-      // Configurar cookie para autenticação alternativa
       document.cookie = `authToken=${data.accessToken}; path=/; max-age=${60*60*24*7}; SameSite=Strict`;
-      
       if (data.refreshToken) {
         localStorage.setItem('refresh_token', data.refreshToken);
       }
-      
       return { success: true, role: data.user.role };
     } catch (error: any) {
       console.error('Login error:', error);
       
-      // Extrair mensagem de erro mais detalhada
       let message = 'Erro ao fazer login';
       if (error.response?.data) {
         message = error.response.data.message || error.response.data.error || message;
       }
-      
       return { success: false, message };
     } finally {
       setIsLoading(false);
@@ -129,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const refreshToken = localStorage.getItem('refresh_token');
     
     if (token && refreshToken) {
-      // Call the logout endpoint to invalidate refresh token
+      // Invalida refresh token no backend
       axios.post(
         `/api/auth/logout`,
         { refreshToken },
@@ -138,17 +117,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Error during logout:', error);
       });
     }
-    
     setUser(null);
     setToken(null);
     localStorage.removeItem('auth_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_email');
-    
-    // Limpar cookie de autenticação
     document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    
-    // Determinar para onde redirecionar com base no caminho atual
     const isAdminPath = window.location.pathname.startsWith('/admin');
     router.push(isAdminPath ? '/admin/login' : '/login');
   };

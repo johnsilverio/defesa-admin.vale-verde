@@ -15,12 +15,11 @@ export default function HomePage() {
   const router = useRouter();
   const { user } = useAuth();
   
-  // Definir o ID da propriedade padrão para a Fazenda Brilhante
+  // ID da propriedade padrão exibida na home
   const propertyId = 'fazenda-brilhante';
 
   return (
     <ProtectedRoute propertyId={propertyId}>
-      {/* O conteúdo só será renderizado se o usuário estiver autenticado e tiver acesso à propriedade */}
 
       <Header />
       <main>

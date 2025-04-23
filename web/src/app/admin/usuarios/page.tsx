@@ -39,11 +39,8 @@ export default function UsersPage() {
       return;
     }
     fetchUsers();
-    // Log para depuração
-    console.log('Contexto de autenticação:', user);
   }, [user, router]);
-  
-  // Reset form when modal type changes
+
   useEffect(() => {
     if (modalType === 'create') {
       setFormData({

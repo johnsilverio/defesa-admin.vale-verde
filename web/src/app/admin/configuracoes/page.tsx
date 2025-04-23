@@ -44,7 +44,7 @@ export default function ConfiguracoesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validar formulário
+    // Validação básica do formulário
     if (!formData.name.trim()) {
       toast.error('O nome é obrigatório');
       return;

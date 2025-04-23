@@ -25,12 +25,10 @@ export default function ContentPageLayout({
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      // If not authenticated, redirect to login
       router.replace('/login');
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Show loading while checking auth state
   if (isLoading || !isAuthenticated) {
     return <Loading />;
   }
@@ -53,11 +51,8 @@ export default function ContentPageLayout({
               </p>
             )}
           </div>
-          
-          {/* Overlay gradient */}
+
           <div className="absolute inset-0 bg-black bg-opacity-30 z-[1]"></div>
-          
-          {/* Bottom gradient fade */}
           <div className="absolute bottom-0 w-full h-24 bg-gradient-to-t from-[var(--primary-dark)] to-transparent z-[2]"></div>
         </section>
         

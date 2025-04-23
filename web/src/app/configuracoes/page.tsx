@@ -11,7 +11,7 @@ export default function ConfiguracoesPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, we would save these settings to the backend
+    // Simulação de salvamento (mock)
     setSavedMessage('Configurações salvas com sucesso!');
     setTimeout(() => {
       setSavedMessage('');

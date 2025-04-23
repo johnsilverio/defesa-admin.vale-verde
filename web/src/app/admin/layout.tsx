@@ -18,46 +18,28 @@ export default function AdminLayout({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const isAdminLoginPage = pathname === '/admin/login';
 
-  // Este useEffect é chamado consistentemente em toda renderização
+  // Lógica de proteção e redirecionamento do layout admin
   useEffect(() => {
-    // Verificar se o usuário está autenticado como admin e redirecionar adequadamente
     if (!isLoading) {
-      console.log('Layout Admin - Estado de autenticação:', { 
-        isLoading, 
-        isAdminLoginPage, 
-        user: user ? { role: user.role, name: user.name } : null,
-        isAdmin
-      });
-      
-      // Se estiver na página de login e for admin, redirecionar para a página de documentos
       if (isAdminLoginPage && user && user.role === 'admin') {
-        console.log("Admin já autenticado, redirecionando para gerenciamento de documentos");
         router.replace('/admin/documentos');
         return;
       }
-      
-      // Se não estiver na página de login e não for admin, redirecionar para o login
       if (!isAdminLoginPage && !user) {
-        console.log("Usuário não autenticado, redirecionando para login");
         router.replace('/admin/login');
         return;
       }
-      
-      // Se não estiver na página de login e não for admin, redirecionar para página de acesso negado
       if (!isAdminLoginPage && user && !isAdmin) {
-        console.log("Usuário autenticado não é admin, redirecionando para acesso negado");
         router.replace('/access-denied');
         return;
       }
     }
   }, [router, user, isAdmin, isLoading, isAdminLoginPage]);
 
-  // Renderização condicional APÓS todos os hooks serem chamados
   if (isAdminLoginPage) {
     return <>{children}</>;
   }
   
-  // Show loading while checking authentication status
   if (isLoading) {
     return <Loading />;
   }

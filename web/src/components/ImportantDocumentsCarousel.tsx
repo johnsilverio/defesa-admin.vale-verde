@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { FiChevronLeft, FiChevronRight, FiDownload } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Tipo para documento
 interface Document {
   _id: string;
   title: string;
@@ -34,14 +33,10 @@ export default function ImportantDocumentsCarousel() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { token } = useAuth();
 
-  // Buscar documentos destacados da API
   useEffect(() => {
     const fetchHighlightedDocuments = async () => {
       try {
         setLoading(true);
-        // Verificar se o token está disponível
-        
-        // Usando dados estáticos para a página inicial quando não estiver autenticado
         if (!token) {
           // Dados estáticos para exibição na página inicial
           const staticDocuments = [

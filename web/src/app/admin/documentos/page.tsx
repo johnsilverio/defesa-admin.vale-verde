@@ -655,8 +655,7 @@ export default function DocumentsPage() {
                     onChange={handleInputChange}
                     className="h-5 w-5 text-[var(--primary)] rounded focus:ring-[var(--primary)]"
                   />
-                  <span className="text-gray-700 font-medium">Documento Crucial</span>
-                  <span className="bg-yellow-100 text-yellow-800 text-xs font-medium py-1 px-2 rounded-full">Destaque</span>
+                  <span className="text-gray-700 font-medium">Destacar documento</span>
                 </label>
                 <p className="text-sm text-gray-500 mt-1 ml-7">
                   Marque esta opção para destacar documentos essenciais na página inicial e na biblioteca de documentos

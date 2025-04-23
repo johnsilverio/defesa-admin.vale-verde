@@ -20,7 +20,7 @@ export default function OcupacaoPage() {
           que demonstram a ocupação contínua e legítima da propriedade ao longo das décadas.
         </p>
         
-        {/* Primeira Fase da Ocupação */}
+        {/* Primeira fase da ocupação documentada */}
         <div className="mb-10">
           <h3 className="text-xl font-semibold text-[var(--dark-green)] mb-3 border-b pb-2">
             Período 1904-1940: Estabelecimento Inicial
@@ -48,7 +48,7 @@ export default function OcupacaoPage() {
           </div>
         </div>
         
-        {/* Segunda Fase da Ocupação */}
+        {/* Segunda fase da ocupação: consolidação e desenvolvimento */}
         <div className="mb-10">
           <h3 className="text-xl font-semibold text-[var(--dark-green)] mb-3 border-b pb-2">
             Período 1940-1980: Consolidação e Desenvolvimento

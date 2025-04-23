@@ -15,14 +15,14 @@ export default function AdminLogin() {
   const { login, isLoading, user, logout } = useAuth();
   const router = useRouter();
 
-  // If already logged in as admin, redirect to admin dashboard
+  // Redireciona admin autenticado para o dashboard
   useEffect(() => {
     if (user && user.role === 'admin') {
       router.push('/admin');
     }
   }, [user, router]);
 
-  // Função para validar inputs
+  // Validação dos campos do formulário
   const validateInputs = () => {
     if (!email.trim()) {
       setValidationError('O campo de email é obrigatório.');
@@ -38,7 +38,7 @@ export default function AdminLogin() {
     return true;
   };
 
-  // Função para lidar com o login
+  // Lógica de autenticação do admin
   const handleLogin = async (e?: React.MouseEvent | React.KeyboardEvent) => {
     // Se recebemos um evento, prevenimos qualquer comportamento padrão
     if (e) {

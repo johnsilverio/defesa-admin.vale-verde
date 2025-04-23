@@ -14,16 +14,11 @@ export default function Header() {
   const { user, logout, isAdmin } = useAuth();
   const userMenuRef = useRef<HTMLDivElement>(null);
   
-  // Handle scroll effect
+  // Efeito de scroll para alterar visual do header
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
-    
     window.addEventListener('scroll', handleScroll);
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -42,21 +37,19 @@ export default function Header() {
     return pathname === path ? 'active' : '';
   };
 
-  // Close user menu when clicking outside
+  // Fecha o menu do usuário ao clicar fora
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
       }
     }
-    
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
-  // Display user name or "John" as default
   const displayName = user?.name || "John";
 
   return (
