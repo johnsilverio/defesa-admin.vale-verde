@@ -157,11 +157,8 @@ function runSetup() {
             if (isSupabaseConfigured) {
                 // Criação da estrutura no Supabase
                 console.log('🔷 Criando estrutura no Supabase...');
-                // Pasta raiz para documentos
-                yield (0, storageService_1.createFolder)('documentos');
-                console.log('✅ Pasta raiz "documentos" criada/verificada no Supabase');
                 // Pasta para a propriedade
-                const supabasePropertyPath = `documentos/${propertySlug}`;
+                const supabasePropertyPath = `${propertySlug}`;
                 yield (0, storageService_1.createFolder)(supabasePropertyPath);
                 console.log(`✅ Pasta da propriedade criada/verificada: ${supabasePropertyPath}`);
                 // Pastas para as categorias
