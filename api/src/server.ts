@@ -51,6 +51,8 @@ app.use(helmet({
   contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false
 }));
 
+// Rota para favicon.ico e favicon.png para evitar logs 404
+app.get(['/favicon.ico', '/favicon.png'], (req, res) => res.status(204).end());
 // Configuração de rate limits
 const DISABLE_RATE_LIMITS = process.env.DISABLE_RATE_LIMITS === 'true' || process.env.NODE_ENV !== 'production';
 
