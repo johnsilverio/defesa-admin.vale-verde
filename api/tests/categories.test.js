@@ -21,16 +21,45 @@ const documents_1 = __importDefault(require("../src/routes/documents"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
-const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const globals_1 = require("@jest/globals");
+// Mock aprimorado do serviço Supabase para incluir as funções de gerenciamento de pastas
+globals_1.jest.mock('../src/services/storageService', () => ({
+    uploadFile: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Upload de arquivo para ${path}`);
+        return { path: path };
+    })),
+    getFileUrl: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Gerando URL para ${path}`);
+        return `https://mock-supabase.com/${path}?token=signed`;
+    })),
+    deleteFile: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Excluindo arquivo ${path}`);
+        // Esta função não retorna nada no original
+    })),
+    createFolder: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Criando pasta ${path}`);
+        return { path: `${path}/.folder` };
+    })),
+    folderExists: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Verificando se pasta ${path} existe`);
+        return true;
+    })),
+    listFolderContents: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Listando conteúdo da pasta ${path}`);
+        return [{ name: 'arquivo-mock.pdf', id: 'mock-id' }];
+    })),
+}));
 dotenv_1.default.config();
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-key-for-jwt';
 process.env.MONGODB_URI = 'mongodb://localhost:27017/defesa-admin-test';
-process.env.STORAGE_PATH = path_1.default.join(__dirname, 'test-uploads');
-
-// Os mocks do Supabase agora são gerenciados pelo arquivo jest.setup.js
-
+// Definindo variáveis de ambiente simuladas para o Supabase
+process.env.SUPABASE_URL = 'https://mock.supabase.co';
+process.env.SUPABASE_SERVICE_KEY = 'mock-key';
+process.env.SUPABASE_BUCKET = 'mock-bucket';
+// Sinalizando que estamos em ambiente serverless (como Vercel)
+process.env.VERCEL = '1';
 // Configuração completa do app como no server.ts real
 const app = (0, express_1.default)();
 // Middlewares essenciais
@@ -59,11 +88,7 @@ beforeAll(() => __awaiter(void 0, void 0, void 0, function* () {
         // Conecta ao MongoDB e limpa o banco
         yield mongoose_1.default.connect(process.env.MONGODB_URI);
         yield mongoose_1.default.connection.dropDatabase();
-        // Cria pasta de uploads para testes
-        const fs = require('fs');
-        if (!fs.existsSync(process.env.STORAGE_PATH)) {
-            fs.mkdirSync(process.env.STORAGE_PATH, { recursive: true });
-        }
+        // Removemos a criação de pasta local, pois agora usamos Supabase
         // Cria admin
         const reg = yield (0, supertest_1.default)(app)
             .post('/api/auth/register')
@@ -104,17 +129,7 @@ beforeAll(() => __awaiter(void 0, void 0, void 0, function* () {
     }
 }));
 afterAll(() => __awaiter(void 0, void 0, void 0, function* () {
-    // Limpa recursos
-    const fs = require('fs');
-    const { rmSync } = fs;
-    try {
-        if (fs.existsSync(process.env.STORAGE_PATH)) {
-            rmSync(process.env.STORAGE_PATH, { recursive: true, force: true });
-        }
-    }
-    catch (e) {
-        console.error('Erro ao limpar pasta de uploads:', e);
-    }
+    // Não precisamos mais limpar pastas locais
     yield mongoose_1.default.disconnect();
 }));
 describe('Categories API', () => {

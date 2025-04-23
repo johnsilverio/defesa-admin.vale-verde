@@ -20,8 +20,15 @@ const slugify_1 = require("../utils/slugify");
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const storageService_1 = require("../services/storageService");
 // Load environment variables
 dotenv_1.default.config();
+// Verifique se está rodando em ambiente serverless (Vercel)
+const isServerlessEnvironment = process.env.VERCEL === '1';
+// Verifica se o Supabase está configurado
+const isSupabaseConfigured = process.env.SUPABASE_URL &&
+    process.env.SUPABASE_SERVICE_KEY &&
+    process.env.SUPABASE_BUCKET;
 // Configuration options with defaults
 const CONFIG = {
     MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/defesa-admin',
@@ -42,19 +49,35 @@ function runSetup() {
             console.log('🚀 Iniciando configuração do sistema DefesaAdmin...');
             console.log('🔧 Verificando ambiente...');
             console.log(`📊 URL do MongoDB: ${CONFIG.MONGODB_URI}`);
-            console.log(`📁 Diretório de armazenamento: ${CONFIG.STORAGE_PATH}`);
+            // Verifica configuração do Supabase
+            if (isSupabaseConfigured) {
+                console.log(`🔵 Supabase configurado: ${process.env.SUPABASE_URL}`);
+                console.log(`🔵 Bucket: ${process.env.SUPABASE_BUCKET}`);
+            }
+            else {
+                console.log('⚠️ Supabase não configurado! Configure as variáveis SUPABASE_URL, SUPABASE_SERVICE_KEY e SUPABASE_BUCKET');
+                if (!isServerlessEnvironment) {
+                    console.log(`📁 Usando armazenamento local em: ${CONFIG.STORAGE_PATH}`);
+                }
+                else {
+                    console.error('❌ Em ambiente serverless, a configuração do Supabase é obrigatória!');
+                    return false;
+                }
+            }
             // Connect to MongoDB
             console.log('\n🔌 Conectando ao MongoDB...');
             yield mongoose_1.default.connect(CONFIG.MONGODB_URI);
             connection = mongoose_1.default.connection;
             console.log('✅ MongoDB conectado com sucesso');
-            // Setup storage directory
-            if (!fs_1.default.existsSync(CONFIG.STORAGE_PATH)) {
-                fs_1.default.mkdirSync(CONFIG.STORAGE_PATH, { recursive: true });
-                console.log(`✅ Diretório de armazenamento criado em ${CONFIG.STORAGE_PATH}`);
-            }
-            else {
-                console.log(`ℹ️ Diretório de armazenamento já existe em ${CONFIG.STORAGE_PATH}`);
+            // Setup storage directory - apenas para ambiente não-serverless e sem Supabase
+            if (!isServerlessEnvironment && !isSupabaseConfigured) {
+                if (!fs_1.default.existsSync(CONFIG.STORAGE_PATH)) {
+                    fs_1.default.mkdirSync(CONFIG.STORAGE_PATH, { recursive: true });
+                    console.log(`✅ Diretório de armazenamento local criado em ${CONFIG.STORAGE_PATH}`);
+                }
+                else {
+                    console.log(`ℹ️ Diretório de armazenamento local já existe em ${CONFIG.STORAGE_PATH}`);
+                }
             }
             // Remove outros admins antes de criar o admin desejado
             console.log(`\n🧹 Removendo administradores antigos...`);
@@ -129,20 +152,49 @@ function runSetup() {
                 yield admin.save();
                 console.log(`ℹ️ Usuário admin (${CONFIG.ADMIN_EMAIL}) já existia e foi atualizado`);
             }
-            // Setup folder structure
+            // Configuração de estrutura de pastas
             console.log('\n📋 Configurando estrutura de pastas...');
-            const propertyDir = path_1.default.join(CONFIG.STORAGE_PATH, propertySlug);
-            if (!fs_1.default.existsSync(propertyDir)) {
-                fs_1.default.mkdirSync(propertyDir, { recursive: true });
-                console.log(`✅ Diretório da propriedade criado: ${propertyDir}`);
-            }
-            for (const catData of defaultCategories) {
-                const categorySlug = (0, slugify_1.slugify)(catData.name);
-                const categoryDir = path_1.default.join(propertyDir, categorySlug);
-                if (!fs_1.default.existsSync(categoryDir)) {
-                    fs_1.default.mkdirSync(categoryDir, { recursive: true });
-                    console.log(`✅ Diretório de categoria criado: ${categoryDir}`);
+            if (isSupabaseConfigured) {
+                // Criação da estrutura no Supabase
+                console.log('🔷 Criando estrutura no Supabase...');
+                // Pasta raiz para documentos
+                yield (0, storageService_1.createFolder)('documentos');
+                console.log('✅ Pasta raiz "documentos" criada/verificada no Supabase');
+                // Pasta para a propriedade
+                const supabasePropertyPath = `documentos/${propertySlug}`;
+                yield (0, storageService_1.createFolder)(supabasePropertyPath);
+                console.log(`✅ Pasta da propriedade criada/verificada: ${supabasePropertyPath}`);
+                // Pastas para as categorias
+                for (const catData of defaultCategories) {
+                    const categorySlug = (0, slugify_1.slugify)(catData.name);
+                    const categoryPath = `${supabasePropertyPath}/${categorySlug}`;
+                    yield (0, storageService_1.createFolder)(categoryPath);
+                    console.log(`✅ Pasta de categoria criada/verificada: ${categoryPath}`);
                 }
+            }
+            else if (!isServerlessEnvironment) {
+                // Criação da estrutura local (apenas em ambiente não-serverless)
+                const localDocumentsDir = path_1.default.join(CONFIG.STORAGE_PATH, 'documentos');
+                if (!fs_1.default.existsSync(localDocumentsDir)) {
+                    fs_1.default.mkdirSync(localDocumentsDir, { recursive: true });
+                }
+                console.log(`✅ Diretório raiz "documentos" criado: ${localDocumentsDir}`);
+                const propertyDir = path_1.default.join(localDocumentsDir, propertySlug);
+                if (!fs_1.default.existsSync(propertyDir)) {
+                    fs_1.default.mkdirSync(propertyDir, { recursive: true });
+                    console.log(`✅ Diretório da propriedade criado: ${propertyDir}`);
+                }
+                for (const catData of defaultCategories) {
+                    const categorySlug = (0, slugify_1.slugify)(catData.name);
+                    const categoryDir = path_1.default.join(propertyDir, categorySlug);
+                    if (!fs_1.default.existsSync(categoryDir)) {
+                        fs_1.default.mkdirSync(categoryDir, { recursive: true });
+                        console.log(`✅ Diretório de categoria criado: ${categoryDir}`);
+                    }
+                }
+            }
+            else {
+                console.log('⚠️ Pulando criação de estrutura de armazenamento - Configure o Supabase para ambiente serverless');
             }
             console.log('\n✨ Configuração concluída com sucesso! O sistema está pronto para uso.');
             console.log(`🔐 Use as credenciais de administrador (${CONFIG.ADMIN_EMAIL}) para fazer login no sistema.`);

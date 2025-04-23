@@ -17,16 +17,45 @@ const express_1 = __importDefault(require("express"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const auth_1 = __importDefault(require("../src/routes/auth"));
 const dotenv_1 = __importDefault(require("dotenv"));
-
+const globals_1 = require("@jest/globals");
+// Mock aprimorado do serviço Supabase para incluir as funções de gerenciamento de pastas
+globals_1.jest.mock('../src/services/storageService', () => ({
+    uploadFile: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Upload de arquivo para ${path}`);
+        return { path: path };
+    })),
+    getFileUrl: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Gerando URL para ${path}`);
+        return `https://mock-supabase.com/${path}?token=signed`;
+    })),
+    deleteFile: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Excluindo arquivo ${path}`);
+        // Esta função não retorna nada no original
+    })),
+    createFolder: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Criando pasta ${path}`);
+        return { path: `${path}/.folder` };
+    })),
+    folderExists: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Verificando se pasta ${path} existe`);
+        return true;
+    })),
+    listFolderContents: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Listando conteúdo da pasta ${path}`);
+        return [{ name: 'arquivo-mock.pdf', id: 'mock-id' }];
+    })),
+}));
 // Carrega variáveis de ambiente para os testes
 dotenv_1.default.config();
-
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-key-for-jwt';
 process.env.MONGODB_URI = 'mongodb://localhost:27017/defesa-admin-test';
-
-// Os mocks do Supabase agora são gerenciados pelo arquivo jest.setup.js
-
+// Definindo variáveis de ambiente simuladas para o Supabase
+process.env.SUPABASE_URL = 'https://mock.supabase.co';
+process.env.SUPABASE_SERVICE_KEY = 'mock-key';
+process.env.SUPABASE_BUCKET = 'mock-bucket';
+// Sinalizando que estamos em ambiente serverless (como Vercel)
+process.env.VERCEL = '1';
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use('/api/auth', auth_1.default);

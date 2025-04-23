@@ -24,54 +24,44 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const globals_1 = require("@jest/globals");
+// Mock aprimorado do serviço Supabase para incluir as funções de gerenciamento de pastas
+globals_1.jest.mock('../src/services/storageService', () => ({
+    uploadFile: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Upload de arquivo para ${path}`);
+        return { path: path };
+    })),
+    getFileUrl: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Gerando URL para ${path}`);
+        return `https://mock-supabase.com/${path}?token=signed`;
+    })),
+    deleteFile: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Excluindo arquivo ${path}`);
+        // Esta função não retorna nada no original
+    })),
+    createFolder: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Criando pasta ${path}`);
+        return { path: `${path}/.folder` };
+    })),
+    folderExists: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Verificando se pasta ${path} existe`);
+        return true;
+    })),
+    listFolderContents: globals_1.jest.fn().mockImplementation((path) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Mock: Listando conteúdo da pasta ${path}`);
+        return [{ name: 'arquivo-mock.pdf', id: 'mock-id' }];
+    })),
+}));
 dotenv_1.default.config();
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-key-for-jwt';
 process.env.MONGODB_URI = 'mongodb://localhost:27017/defesa-admin-test';
-process.env.STORAGE_PATH = path_1.default.join(__dirname, 'test-uploads');
-
-// Para garantir que os mocks serão aplicados no Node.js
+// Definindo variáveis de ambiente simuladas para o Supabase
 process.env.SUPABASE_URL = 'https://mock.supabase.co';
-process.env.SUPABASE_SERVICE_KEY = 'mock-service-key';
+process.env.SUPABASE_SERVICE_KEY = 'mock-key';
 process.env.SUPABASE_BUCKET = 'mock-bucket';
-
-// Mock do módulo do Supabase para evitar o erro "supabaseUrl is required"
-jest.mock('../src/services/supabaseService.js', () => ({
-  supabase: {
-    storage: {
-      from: jest.fn().mockReturnValue({
-        upload: jest.fn().mockResolvedValue({ data: { path: 'mocked-path' }, error: null }),
-        createSignedUrl: jest.fn().mockResolvedValue({ data: { signedUrl: 'https://mock-supabase.com/signed-url' }, error: null }),
-        remove: jest.fn().mockResolvedValue({ error: null }),
-        list: jest.fn().mockResolvedValue({ data: [{ name: 'arquivo-mock.pdf' }], error: null })
-      })
-    }
-  }
-}), { virtual: true });
-
-// Mock das funções do serviço de armazenamento com suporte ao novo formato de caminho
-jest.mock('../src/services/storageService.js', () => ({
-  uploadFile: jest.fn().mockImplementation(async (path) => {
-    // Se o caminho não começar com 'documentos/', reescreva para o novo padrão
-    const propertySlug = 'fazenda-doc';
-    const categorySlug = 'categoria-doc';
-    const fileName = path.split('/').pop();
-    const timestamp = Date.now();
-    const newPath = path.startsWith('documentos/') 
-      ? path 
-      : `documentos/${propertySlug}/${categorySlug}/${timestamp}_${fileName}`;
-    console.log(`Mock uploadFile: ${path} -> ${newPath}`);
-    return { path: newPath };
-  }),
-  getFileUrl: jest.fn().mockImplementation(async () => 'https://mock-supabase.com/signed-url'),
-  deleteFile: jest.fn().mockImplementation(async () => {}),
-  createFolder: jest.fn().mockImplementation(async (path) => ({ path: `${path}/.folder` })),
-  folderExists: jest.fn().mockImplementation(async () => true),
-  listFolderContents: jest.fn().mockImplementation(async () => [{ name: 'arquivo-mock.pdf', id: 'mock-id' }])
-}));
-
-// Os mocks do Supabase agora são gerenciados pelo arquivo jest.setup.js
-
+// Sinalizando que estamos em ambiente serverless (como Vercel)
+process.env.VERCEL = '1';
 // Configuração completa do app como no server.ts real
 const app = (0, express_1.default)();
 // Middlewares essenciais
@@ -102,11 +92,7 @@ beforeAll(() => __awaiter(void 0, void 0, void 0, function* () {
         // Conecta ao MongoDB e limpa o banco
         yield mongoose_1.default.connect(process.env.MONGODB_URI);
         yield mongoose_1.default.connection.dropDatabase();
-        // Cria pasta de uploads para testes
-        if (!fs_1.default.existsSync(process.env.STORAGE_PATH)) {
-            fs_1.default.mkdirSync(process.env.STORAGE_PATH, { recursive: true });
-        }
-        // Garante arquivo de teste
+        // Garante arquivo de teste para upload (ainda precisamos disso para o teste)
         const testFilePath = path_1.default.join(__dirname, 'arquivo-teste.txt');
         fs_1.default.writeFileSync(testFilePath, 'conteudo de teste');
         // Cria admin
@@ -163,20 +149,10 @@ beforeAll(() => __awaiter(void 0, void 0, void 0, function* () {
     }
 }));
 afterAll(() => __awaiter(void 0, void 0, void 0, function* () {
-    // Remove arquivo de teste
+    // Remove arquivo de teste temporário
     const testFilePath = path_1.default.join(__dirname, 'arquivo-teste.txt');
     if (fs_1.default.existsSync(testFilePath))
         fs_1.default.unlinkSync(testFilePath);
-    // Limpa pasta de uploads
-    try {
-        const { rmSync } = fs_1.default;
-        if (fs_1.default.existsSync(process.env.STORAGE_PATH)) {
-            rmSync(process.env.STORAGE_PATH, { recursive: true, force: true });
-        }
-    }
-    catch (e) {
-        console.error('Erro ao limpar pasta de uploads:', e);
-    }
     yield mongoose_1.default.disconnect();
 }));
 describe('Documents API', () => {
@@ -195,10 +171,11 @@ describe('Documents API', () => {
         console.log('Caminho do arquivo:', res.body.filePath);
         expect(res.statusCode).toBe(201);
         expect(res.body.title).toBe('Documento Teste');
+        // Armazenamos o ID do documento para os próximos testes
         documentId = res.body._id;
         console.log('ID do documento criado:', documentId);
-        const isValidFormat = 
-            /^docs\/\d+_.+$/.test(res.body.filePath) || 
+        // O teste permite tanto o formato antigo quanto o novo para compatibilidade durante a transição
+        const isValidFormat = /^docs\/\d+_.+$/.test(res.body.filePath) ||
             /^documentos\/[^\/]+\/[^\/]+\/\d+_.+$/.test(res.body.filePath);
         expect(isValidFormat).toBe(true);
     }));
@@ -212,7 +189,7 @@ describe('Documents API', () => {
         expect(res.body.length).toBeGreaterThan(0);
     }));
     it('deve buscar documento por id', () => __awaiter(void 0, void 0, void 0, function* () {
-        expect(documentId).toBeTruthy();
+        expect(documentId).toBeTruthy(); // Garante que temos um ID válido
         const res = yield (0, supertest_1.default)(app)
             .get(`/api/documents/${documentId}`)
             .set('Authorization', `Bearer ${adminToken}`);
@@ -222,7 +199,7 @@ describe('Documents API', () => {
         expect(res.body._id).toBe(documentId);
     }));
     it('deve atualizar um documento', () => __awaiter(void 0, void 0, void 0, function* () {
-        expect(documentId).toBeTruthy();
+        expect(documentId).toBeTruthy(); // Garante que temos um ID válido
         const res = yield (0, supertest_1.default)(app)
             .put(`/api/documents/${documentId}`)
             .set('Authorization', `Bearer ${adminToken}`)
@@ -235,8 +212,9 @@ describe('Documents API', () => {
         expect(res.statusCode).toBe(200);
         expect(res.body.title).toBe('Documento Atualizado');
     }));
+    // Movendo o teste de download para antes do delete
     it('deve gerar uma URL de download para um documento', () => __awaiter(void 0, void 0, void 0, function* () {
-        expect(documentId).toBeTruthy();
+        expect(documentId).toBeTruthy(); // Garante que temos um ID válido
         const res = yield (0, supertest_1.default)(app)
             .get(`/api/documents/${documentId}/download`)
             .set('Authorization', `Bearer ${adminToken}`);
@@ -247,13 +225,13 @@ describe('Documents API', () => {
         expect(typeof res.body.url).toBe('string');
     }));
     it('deve deletar um documento', () => __awaiter(void 0, void 0, void 0, function* () {
-        expect(documentId).toBeTruthy();
+        expect(documentId).toBeTruthy(); // Garante que temos um ID válido
         const res = yield (0, supertest_1.default)(app)
             .delete(`/api/documents/${documentId}`)
             .set('Authorization', `Bearer ${adminToken}`);
         console.log('Deletar documento:', documentId);
         console.log('Resposta:', res.status, res.body);
         expect(res.statusCode).toBe(200);
-        expect(res.body.success || res.body.message).toBeTruthy();
+        expect(res.body.success).toBe(true);
     }));
 });
