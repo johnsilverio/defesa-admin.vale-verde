@@ -69,4 +69,4 @@ next-env.d.ts
 # temp files
 .temp
 .tmp
-.cache
+.cachek
