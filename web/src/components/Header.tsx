@@ -27,6 +27,10 @@ export default function Header() {
   
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+    // Fechar o menu de usuário quando abrir o menu mobile
+    if (!isMenuOpen) {
+      setIsUserMenuOpen(false);
+    }
   };
 
   const toggleUserMenu = () => {
@@ -54,9 +58,9 @@ export default function Header() {
 
   return (
     <header className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-[var(--shadow-md)] backdrop-blur-sm bg-white/95' : 'bg-white'}`}>
-      <div className="container flex justify-between items-center py-2.5 md:py-3 px-0 sm:px-4 md:px-6 lg:px-8">
+      <div className="container flex justify-between items-center py-2.5 md:py-3">
         {/* Logo */}
-        <div className="flex items-center h-12 pl-0 pr-2 py-1.5">
+        <div className="flex items-center h-12 px-2 py-1.5">
           <Link href="/" className="block transition-transform duration-300 hover:scale-105">
             <div style={{ height: '2.25rem', width: 'auto' }}>
               <Image
@@ -142,8 +146,8 @@ export default function Header() {
             </ul>
           </nav>
           
-          {/* User Menu - Desktop & Mobile */}
-          <div className="relative" ref={userMenuRef}>
+          {/* User Menu - Desktop only */}
+          <div className="relative hidden md:block" ref={userMenuRef}>
             <button 
               onClick={toggleUserMenu}
               className="flex items-center space-x-1 text-[var(--primary-dark)] hover:text-[var(--primary)] transition-colors px-3 py-1.5 rounded-md hover:bg-[var(--primary-50)] text-xs md:text-sm"
@@ -166,7 +170,6 @@ export default function Header() {
                   className="flex items-center px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--primary-50)] hover:text-[var(--primary-dark)]"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   Configurações
@@ -177,7 +180,7 @@ export default function Header() {
                     className="flex items-center px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--primary-50)] hover:text-[var(--primary-dark)]"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                     </svg>
                     Painel Administrativo
                   </Link>
@@ -197,25 +200,27 @@ export default function Header() {
           
           {/* Mobile menu toggle */}
           <div 
-            className="flex flex-col justify-between w-6 md:w-7 h-4 md:h-5 cursor-pointer md:hidden ml-2 md:ml-4"
+            className="flex justify-center items-center p-2 md:hidden cursor-pointer"
             onClick={toggleMenu}
             aria-expanded={isMenuOpen}
             aria-controls="mobile-menu"
           >
-            <span className={`h-0.5 w-full bg-[var(--primary-dark)] transition-all transform ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-            <span className={`h-0.5 w-full bg-[var(--primary-dark)] transition-all ${isMenuOpen ? 'opacity-0' : 'opacity-100'}`}></span>
-            <span className={`h-0.5 w-full bg-[var(--primary-dark)] transition-all transform ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+            <div className="flex flex-col justify-between w-6 h-5">
+              <span className={`h-0.5 w-full bg-[var(--primary-dark)] transition-all transform ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+              <span className={`h-0.5 w-full bg-[var(--primary-dark)] transition-all ${isMenuOpen ? 'opacity-0' : 'opacity-100'}`}></span>
+              <span className={`h-0.5 w-full bg-[var(--primary-dark)] transition-all transform ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Mobile navigation menu */}
       <div 
-        className={`bg-white shadow-inner overflow-hidden transition-all duration-300 ${isMenuOpen ? 'max-h-[500px]' : 'max-h-0'}`}
+        className={`bg-white shadow-inner overflow-hidden transition-all duration-300 ${isMenuOpen ? 'max-h-[calc(100vh-4rem)]' : 'max-h-0'}`}
         id="mobile-menu"
       >
         <nav className="container py-4">
-          <ul className="flex flex-col space-y-1">
+          <ul className="list-none p-0 m-0 space-y-1">
             <li>
               <Link 
                 href="/" 
@@ -259,7 +264,7 @@ export default function Header() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
                 Ocupação
               </Link>
@@ -271,7 +276,7 @@ export default function Header() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                 </svg>
                 Fundamentos Jurídicos
               </Link>
@@ -283,7 +288,7 @@ export default function Header() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Documentos
               </Link>
@@ -301,6 +306,62 @@ export default function Header() {
               </Link>
             </li>
           </ul>
+          
+          {/* User menu for mobile */}
+          {user && (
+            <div className="user-menu-mobile">
+              <div className="user-info">
+                <div className="user-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-medium text-[var(--primary-dark)]">{displayName}</div>
+                  <div className="text-xs text-gray-500">{user.email}</div>
+                </div>
+              </div>
+              
+              <div className="space-y-1 mt-2">
+                <Link 
+                  href={isAdmin ? "/admin/configuracoes" : "/configuracoes"}
+                  className="flex items-center py-2 px-4 rounded-md text-[var(--text-primary)] hover:bg-[var(--neutral-100)]"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Configurações
+                </Link>
+                
+                {isAdmin && (
+                  <Link 
+                    href="/admin"
+                    className="flex items-center py-2 px-4 rounded-md text-[var(--text-primary)] hover:bg-[var(--neutral-100)]"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                    Painel Administrativo
+                  </Link>
+                )}
+                
+                <button 
+                  onClick={() => {
+                    logout();
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex items-center w-full text-left py-2 px-4 rounded-md text-[var(--text-primary)] hover:bg-[var(--neutral-100)]"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Sair
+                </button>
+              </div>
+            </div>
+          )}
         </nav>
       </div>
     </header>
