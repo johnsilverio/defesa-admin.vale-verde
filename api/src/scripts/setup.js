@@ -219,3 +219,46 @@ runSetup()
     console.error('Erro fatal durante a execução do script:', error);
     process.exit(1);
 });
+[{
+        "resource": "/home/johnsilverio/Documents/Projects/defesa-admin-vv/api/src/server.ts",
+        "owner": "typescript",
+        "code": "2769",
+        "severity": 8,
+        "message": "No overload matches this call.\n  The last overload gave the following error.\n    Argument of type '(req: Request<{}, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>, number>) => Response<any, Record<...>, number>' is not assignable to parameter of type 'Application<Record<string, any>>'.\n      Type '(req: Request<{}, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>, number>) => Response<any, Record<...>, number>' is missing the following properties from type 'Application<Record<string, any>>': init, defaultConfiguration, engine, set, and 63 more.",
+        "source": "ts",
+        "startLineNumber": 80,
+        "startColumn": 25,
+        "endLineNumber": 80,
+        "endColumn": 60,
+        "relatedInformation": [
+            {
+                "startLineNumber": 168,
+                "startColumn": 5,
+                "endLineNumber": 168,
+                "endColumn": 56,
+                "message": "The last overload is declared here.",
+                "resource": "/home/johnsilverio/Documents/Projects/defesa-admin-vv/api/node_modules/@types/express-serve-static-core/index.d.ts"
+            }
+        ]
+    }, {
+        "resource": "/home/johnsilverio/Documents/Projects/defesa-admin-vv/api/src/server.ts",
+        "owner": "typescript",
+        "code": "2769",
+        "severity": 8,
+        "message": "No overload matches this call.\n  The last overload gave the following error.\n    Argument of type '(req: Request<{}, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>, number>) => Response<any, Record<...>, number>' is not assignable to parameter of type 'Application<Record<string, any>>'.\n      Type '(req: Request<{}, any, any, ParsedQs, Record<string, any>>, res: Response<any, Record<string, any>, number>) => Response<any, Record<...>, number>' is missing the following properties from type 'Application<Record<string, any>>': init, defaultConfiguration, engine, set, and 63 more.",
+        "source": "ts",
+        "startLineNumber": 81,
+        "startColumn": 25,
+        "endLineNumber": 81,
+        "endColumn": 60,
+        "relatedInformation": [
+            {
+                "startLineNumber": 168,
+                "startColumn": 5,
+                "endLineNumber": 168,
+                "endColumn": 56,
+                "message": "The last overload is declared here.",
+                "resource": "/home/johnsilverio/Documents/Projects/defesa-admin-vv/api/node_modules/@types/express-serve-static-core/index.d.ts"
+            }
+        ]
+    }];

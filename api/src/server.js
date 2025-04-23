@@ -42,25 +42,33 @@ const originsString = process.env.CORS_ORIGIN || '';
 const corsOrigins = originsString
     ? originsString.split(',')
     : allowedOrigins;
+// Configuração mais robusta de CORS
 app.use((0, cors_1.default)({
     origin: function (origin, callback) {
-        // Permitir requisições sem origin (ex: mobile apps, curl)
-        if (!origin)
+        // Em ambiente de desenvolvimento, permitir todas as origens
+        if (process.env.NODE_ENV !== 'production') {
             return callback(null, true);
+        }
+        // Permitir requisições sem origin (ex: mobile apps, curl, postman)
+        if (!origin) {
+            return callback(null, true);
+        }
         // Verificar se a origem está na lista de permitidos
         if (corsOrigins.indexOf(origin) !== -1 || corsOrigins.includes('*')) {
             callback(null, true);
         }
         else {
             console.log(`Origem bloqueada por CORS: ${origin}`);
-            callback(null, false);
+            callback(new Error(`Origem não permitida: ${origin}`), false);
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With'],
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
     credentials: true,
-    maxAge: 86400
+    maxAge: 86400,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
 // Configura opções de cookie padrão para segurança
 app.use((req, res, next) => {
