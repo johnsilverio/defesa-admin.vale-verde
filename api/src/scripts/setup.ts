@@ -15,9 +15,9 @@ const CONFIG = {
   MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/defesa-admin',
   STORAGE_PATH: process.env.STORAGE_PATH || path.join(process.cwd(), 'uploads'),
   PROPERTY_NAME: process.env.PROPERTY_NAME || 'Fazenda Brilhante',
-  ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@defesa.com',
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'admin123',
-  ADMIN_NAME: process.env.ADMIN_NAME || 'Administrador',
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'desenvolvimento@valeverdeambiental.com.br',
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '@valeverde123',
+  ADMIN_NAME: process.env.ADMIN_NAME || 'Desenvolvimento',
 };
 
 /**
@@ -46,6 +46,11 @@ async function runSetup() {
     } else {
       console.log(`ℹ️ Diretório de armazenamento já existe em ${CONFIG.STORAGE_PATH}`);
     }
+
+    // Remove outros admins antes de criar o admin desejado
+    console.log(`\n🧹 Removendo administradores antigos...`);
+    await User.deleteMany({ email: { $ne: CONFIG.ADMIN_EMAIL }, role: 'admin' });
+    console.log(`✅ Admins antigos removidos (exceto ${CONFIG.ADMIN_EMAIL})`);
 
     // Setup property
     console.log(`\n📋 Configurando propriedade "${CONFIG.PROPERTY_NAME}"...`);
@@ -99,19 +104,24 @@ async function runSetup() {
     // Setup admin user
     console.log(`\n📋 Configurando usuário administrador (${CONFIG.ADMIN_EMAIL})...`);
     let admin = await User.findOne({ email: CONFIG.ADMIN_EMAIL });
-    
     if (!admin) {
       admin = new User({
         name: CONFIG.ADMIN_NAME,
         email: CONFIG.ADMIN_EMAIL,
         password: CONFIG.ADMIN_PASSWORD,
         role: 'admin',
-        properties: [property._id] // Associate admin with the property
+        properties: [property._id]
       });
       await admin.save();
       console.log(`✅ Usuário admin (${CONFIG.ADMIN_EMAIL}) criado com sucesso`);
     } else {
-      console.log(`ℹ️ Usuário admin (${CONFIG.ADMIN_EMAIL}) já existe`);
+      // Atualiza dados caso já exista
+      admin.name = CONFIG.ADMIN_NAME;
+      admin.password = CONFIG.ADMIN_PASSWORD;
+      admin.role = 'admin';
+      admin.properties = [property._id];
+      await admin.save();
+      console.log(`ℹ️ Usuário admin (${CONFIG.ADMIN_EMAIL}) já existia e foi atualizado`);
     }
 
     // Setup folder structure
