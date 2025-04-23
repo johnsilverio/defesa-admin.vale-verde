@@ -1602,6 +1602,154 @@ body {
   .login-divider {
     margin: 0.5rem auto 1rem;
   }
+  
+  /* Esconder ícones nos inputs em mobile */
+  .login-input-icon {
+    display: none;
+  }
+  
+  /* Ajustar o padding para não ter espaço para ícones */
+  .login-input {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    height: 3.25rem; /* Altura consistente */
+  }
+  
+  /* Corrigir alinhamento do botão de mostrar/esconder senha */
+  .password-toggle-btn {
+    display: flex;
+    width: 2.5rem;
+    height: 3.25rem; /* Mesma altura do input */
+    top: auto; /* Remover posicionamento fixo que causa desalinhamento */
+    bottom: 0; /* Alinhar à parte inferior do grupo */
+  }
+  
+  /* Ajustar padding do input de senha para acomodar o botão de exibir senha */
+  .login-input-group:has(input[type="password"]) .login-input {
+    padding-right: 2.5rem;
+  }
+  
+  /* Ajustes para o placeholder */
+  .login-input::placeholder {
+    opacity: 0.7;
+    font-size: 0.9rem; /* Texto do placeholder um pouco menor */
+  }
+  
+  /* Ajustes para o botão de login */
+  .login-button {
+    min-height: 3.25rem;
+    font-size: 1rem;
+  }
+  
+  /* Mais espaço entre grupos de input para evitar toques acidentais */
+  .login-input-group {
+    margin-bottom: 1rem;
+  }
+  
+  /* Labels mais visíveis */
+  .login-input-group label {
+    font-size: 1rem;
+    margin-bottom: 0.625rem;
+  }
+}
+
+/* Ajustes específicos para tablet */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Também esconder ícones nos inputs em tablet */
+  .login-input-icon {
+    display: none;
+  }
+  
+  /* Ajustar o padding para não ter espaço para ícones */
+  .login-input {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Manter o botão de mostrar/esconder senha visível e bem alinhado em tablets */
+  .password-toggle-btn {
+    display: flex;
+    width: 2.5rem;
+    height: 2.75rem;
+    top: auto;
+    bottom: 0;
+  }
+  
+  /* Ajustar padding do input de senha para acomodar o botão de exibir senha */
+  .login-input-group:has(input[type="password"]) .login-input {
+    padding-right: 2.5rem;
+  }
+}
+
+/* Responsive adjustments for login pages */
+@media (max-width: 640px) {
+  .login-container {
+    padding: 1.5rem;
+    max-width: 90%;
+    margin: 1rem;
+  }
+  
+  .login-logo {
+    height: 60px;
+    margin-bottom: 1rem;
+  }
+  
+  .login-title {
+    font-size: 1.25rem;
+  }
+  
+  .login-divider {
+    margin: 0.5rem auto 1rem;
+  }
+  
+  /* Esconder ícones nos inputs em mobile */
+  .login-input-icon {
+    display: none;
+  }
+  
+  /* Ajustar o padding para não ter espaço para ícones */
+  .login-input {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    height: 3.25rem; /* Altura consistente */
+  }
+  
+  /* Corrigir alinhamento do botão de mostrar/esconder senha */
+  .password-toggle-btn {
+    display: flex;
+    width: 2.5rem;
+    height: 3.25rem; /* Mesma altura do input */
+    top: auto; /* Remover posicionamento fixo que causa desalinhamento */
+    bottom: 0; /* Alinhar à parte inferior do grupo */
+  }
+  
+  /* Ajustar padding do input de senha para acomodar o botão de exibir senha */
+  .login-input-group:has(input[type="password"]) .login-input {
+    padding-right: 2.5rem;
+  }
+  
+  /* Ajustes para o placeholder */
+  .login-input::placeholder {
+    opacity: 0.7;
+    font-size: 0.9rem; /* Texto do placeholder um pouco menor */
+  }
+  
+  /* Ajustes para o botão de login */
+  .login-button {
+    min-height: 3.25rem;
+    font-size: 1rem;
+  }
+  
+  /* Mais espaço entre grupos de input para evitar toques acidentais */
+  .login-input-group {
+    margin-bottom: 1rem;
+  }
+  
+  /* Labels mais visíveis */
+  .login-input-group label {
+    font-size: 1rem;
+    margin-bottom: 0.625rem;
+  }
 }
 
 /* Estilos para garantir que os ícones nos botões sejam sempre visíveis em qualquer dispositivo */
