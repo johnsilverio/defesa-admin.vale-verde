@@ -1,4 +1,4 @@
-import { FilterIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon } from '@heroicons/react/24/outline';
 import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import clsx from 'clsx';
@@ -28,7 +28,7 @@ export default function FilterButton({
           )}
         >
           {showFilterIcon && (
-            <FilterIcon className="h-4 w-4 mr-1" aria-hidden="true" />
+            <FunnelIcon className="h-4 w-4 mr-1" aria-hidden="true" />
           )}
           <span className="max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">
             {label}
@@ -53,4 +53,4 @@ export default function FilterButton({
       </Transition>
     </Menu>
   );
-} 
+}

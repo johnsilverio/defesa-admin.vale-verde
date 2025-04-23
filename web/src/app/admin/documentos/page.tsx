@@ -32,6 +32,7 @@ interface Document {
     email: string;
   };
   isHighlighted: boolean;
+  downloads?: number;
   createdAt: string;
   updatedAt: string;
 }
