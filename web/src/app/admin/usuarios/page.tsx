@@ -206,24 +206,17 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Link href="/admin" className="back-button">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Voltar para Dashboard
-      </Link>
-      
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--primary-dark)]">Gerenciamento de Usuários</h1>
-          <p className="text-gray-600 mt-1">Adicione, edite e gerencie os usuários do sistema</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--primary-dark)]">Gerenciamento de Usuários</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Adicione, edite e gerencie os usuários do sistema</p>
         </div>
         <button
           onClick={() => setModalType('create')}
           className="admin-btn admin-btn-primary"
         >
-          <FaUserPlus /> Novo Usuário
+          <FaUserPlus className="mr-2" /> Novo Usuário
         </button>
       </div>
 
@@ -232,28 +225,30 @@ export default function UsersPage() {
           <table className="min-w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Função</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Propriedades</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Função</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Propriedades</th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {users.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">{user.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">{user.name}</td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                    <span className="block text-xs sm:text-sm">{user.email}</span>
+                  </td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       user.role === 'admin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
                     }`}>
-                      {user.role === 'admin' ? 'Administrador' : 'Usuário'}
+                      {user.role === 'admin' ? 'Admin' : 'Usuário'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
                     {user.role === 'admin' ? (
-                      <span className="text-gray-500 text-xs">Acesso administrativo completo</span>
+                      <span className="text-gray-500 text-xs">Acesso completo</span>
                     ) : (
                       <div>
                         {user.properties && user.properties.length > 0 ? (
@@ -263,19 +258,19 @@ export default function UsersPage() {
                             </span>
                           ))
                         ) : (
-                          <span className="text-gray-500 text-xs">Nenhuma propriedade</span>
+                          <span className="text-gray-500 text-xs">Nenhuma</span>
                         )}
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                     {deleteConfirmation === user.id ? (
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleDelete(user.id)}
                           className="text-green-600 hover:text-green-900 transition-colors p-1 rounded-full hover:bg-green-50"
                           title="Confirmar"
-                          data-user-id={user.id} // Adicionar atributo de dados para depuração
+                          data-user-id={user.id}
                         >
                           <FaCheck size={16} />
                         </button>
@@ -291,7 +286,7 @@ export default function UsersPage() {
                       <div className="flex space-x-3">
                         <button
                           onClick={() => handleEdit(user)}
-                          className="text-indigo-600 hover:text-indigo-900 transition-colors p-1 rounded-full hover:bg-indigo-50"
+                          className="text-indigo-600 hover:text-indigo-900 transition-colors p-2 rounded-full hover:bg-indigo-50"
                           title={user.email === localStorage.getItem('user_email') ? "Editar (Configurações)" : "Editar"}
                         >
                           <FaEdit size={16} />
@@ -299,7 +294,7 @@ export default function UsersPage() {
                         {user.email !== window.localStorage.getItem('user_email') && (
                           <button 
                             onClick={() => setDeleteConfirmation(user.id)}
-                            className="text-red-600 hover:text-red-900 transition-colors p-1 rounded-full hover:bg-red-50"
+                            className="text-red-600 hover:text-red-900 transition-colors p-2 rounded-full hover:bg-red-50"
                             title="Excluir"
                           >
                             <FaTrash size={16} />
@@ -316,10 +311,10 @@ export default function UsersPage() {
       </div>
 
       {modalType && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl">
-            <div className="flex items-center justify-between mb-6 pb-3 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-[var(--primary-dark)]">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-0 overflow-y-auto">
+          <div className="bg-white p-4 sm:p-6 rounded-lg w-full max-w-md shadow-xl my-4 sm:my-8">
+            <div className="flex items-center justify-between mb-4 sm:mb-6 pb-3 border-b border-gray-200">
+              <h2 className="text-lg sm:text-xl font-bold text-[var(--primary-dark)]">
                 {modalType === 'create' ? 'Novo Usuário' : 'Editar Usuário'}
               </h2>
               <button
@@ -332,92 +327,94 @@ export default function UsersPage() {
               </button>
             </div>
             <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
-                  Nome
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-                  Senha {modalType === 'edit' && '(deixe em branco para manter a senha atual)'}
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  required={modalType === 'create'}
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="role">
-                  Função
-                </label>
-                <select
-                  id="role"
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'user' | 'admin' })}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                >
-                  <option value="user">Usuário</option>
-                  <option value="admin">Administrador</option>
-                </select>
-              </div>
-              
-              {formData.role === 'user' && (
-                <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
-                    Propriedades
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
+                    Nome
                   </label>
-                  <div className="flex items-center mb-2">
-                    <input
-                      type="checkbox"
-                      id="fazenda-brilhante"
-                      checked={formData.properties.includes('fazenda-brilhante')}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setFormData({
-                            ...formData,
-                            properties: [...formData.properties, 'fazenda-brilhante']
-                          });
-                        } else {
-                          setFormData({
-                            ...formData,
-                            properties: formData.properties.filter(p => p !== 'fazenda-brilhante')
-                          });
-                        }
-                      }}
-                      className="mr-2"
-                    />
-                    <label htmlFor="fazenda-brilhante">Fazenda Brilhante</label>
-                  </div>
-                  {formData.properties.length === 0 && (
-                    <p className="text-red-500 text-xs">Selecione pelo menos uma propriedade</p>
-                  )}
+                  <input
+                    type="text"
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    required
+                  />
                 </div>
-              )}
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+                    Senha {modalType === 'edit' && <span className="font-normal">(deixe em branco para manter)</span>}
+                  </label>
+                  <input
+                    type="password"
+                    id="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    required={modalType === 'create'}
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="role">
+                    Função
+                  </label>
+                  <select
+                    id="role"
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'user' | 'admin' })}
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  >
+                    <option value="user">Usuário</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+                
+                {formData.role === 'user' && (
+                  <div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                      Propriedades
+                    </label>
+                    <div className="flex items-center mb-2">
+                      <input
+                        type="checkbox"
+                        id="fazenda-brilhante"
+                        checked={formData.properties.includes('fazenda-brilhante')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({
+                              ...formData,
+                              properties: [...formData.properties, 'fazenda-brilhante']
+                            });
+                          } else {
+                            setFormData({
+                              ...formData,
+                              properties: formData.properties.filter(p => p !== 'fazenda-brilhante')
+                            });
+                          }
+                        }}
+                        className="mr-2 h-4 w-4"
+                      />
+                      <label htmlFor="fazenda-brilhante" className="text-sm">Fazenda Brilhante</label>
+                    </div>
+                    {formData.properties.length === 0 && (
+                      <p className="text-red-500 text-xs">Selecione pelo menos uma propriedade</p>
+                    )}
+                  </div>
+                )}
+              </div>
               
               <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
                 <button
@@ -431,7 +428,7 @@ export default function UsersPage() {
                   type="submit"
                   className="admin-btn admin-btn-primary"
                 >
-                  {modalType === 'create' ? 'Criar Usuário' : 'Atualizar'}
+                  {modalType === 'create' ? 'Criar' : 'Atualizar'}
                 </button>
               </div>
             </form>
