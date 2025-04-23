@@ -1,85 +1,38 @@
 import { Router, RequestHandler } from 'express';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import { authenticate, requireAdmin } from '../middlewares/authMiddleware';
-
-// Configuração do armazenamento de arquivos
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    if (!fs.existsSync('uploads')) {
-      fs.mkdirSync('uploads', { recursive: true });
-    }
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  }
-});
-
-const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Tipo de arquivo não permitido. Apenas PDF e Word são aceitos.'));
-  }
-};
-
-const upload = multer({ 
-  storage,
-  fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }
-});
+import { upload } from '../middlewares/upload';
 
 const router = Router();
 
 /**
  * Upload de arquivos (usuários autenticados)
+ * (A lógica real de upload para Supabase deve estar no controller, aqui só faz o upload para memória)
  */
 router.post('/', authenticate, upload.single('file'), ((req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'Nenhum arquivo enviado', code: 'NO_FILE' });
   }
+  // Aqui você pode chamar a lógica de upload para Supabase se desejar
   res.status(201).json({
     success: true,
-    filename: req.file.filename,
-    originalname: req.file.originalname,
+    filename: req.file.originalname,
     mimetype: req.file.mimetype,
-    size: req.file.size,
-    path: req.file.path
+    size: req.file.size
   });
 }) as RequestHandler);
 
 /**
- * Listar arquivos (apenas administradores)
+ * Listar arquivos (não suportado com Supabase Storage)
  */
 router.get('/', authenticate, requireAdmin, ((req, res) => {
-  fs.readdir('uploads', (err, files) => {
-    if (err) {
-      return res.status(500).json({ error: 'Erro ao listar arquivos', code: 'LIST_ERROR', message: err.message });
-    }
-    res.json({ files });
-  });
+  res.status(501).json({ error: 'Listagem de arquivos não suportada com Supabase Storage.' });
 }) as RequestHandler);
 
 /**
- * Excluir arquivo (apenas administradores)
+ * Excluir arquivo (não suportado com Supabase Storage)
  */
 router.delete('/:filename', authenticate, requireAdmin, ((req, res) => {
-  const { filename } = req.params;
-  const filePath = path.join('uploads', filename);
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ error: 'Arquivo não encontrado', code: 'FILE_NOT_FOUND' });
-  }
-  fs.unlink(filePath, (err) => {
-    if (err) {
-      return res.status(500).json({ error: 'Erro ao excluir arquivo', code: 'DELETE_ERROR', message: err.message });
-    }
-    res.json({ success: true, message: 'Arquivo excluído com sucesso' });
-  });
+  res.status(501).json({ error: 'Exclusão direta de arquivos não suportada com Supabase Storage.' });
 }) as RequestHandler);
 
 export default router;

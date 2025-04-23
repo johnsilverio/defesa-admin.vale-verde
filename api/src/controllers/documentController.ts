@@ -7,6 +7,7 @@ import { Property } from '../models/property';
 import { normalizeFileName } from '../utils/slugify';
 import { AnyRequestHandler } from '../types/express';
 import { uploadFile, getFileUrl, deleteFile } from '../services/storageService';
+// (Se precisar do upload, importar de '../middlewares/upload')
 
 const documentSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),

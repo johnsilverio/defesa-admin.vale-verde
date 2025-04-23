@@ -1,13 +1,7 @@
 import { Router } from 'express';
-import multer from 'multer';
 import { getAllDocuments, getDocumentById, createDocument, updateDocument, deleteDocument, downloadDocument } from '../controllers/documentController';
 import { authenticate, requireAdmin } from '../middlewares/authMiddleware';
-
-const storage = multer.memoryStorage();
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 }
-});
+import { upload } from '../middlewares/upload';
 
 const router = Router();
 

@@ -5,18 +5,9 @@ import * as documentController from '../controllers/documentController';
 import * as propertyController from '../controllers/propertyController';
 import * as categoryController from '../controllers/categoryController';
 import { authMiddleware, adminMiddleware } from '../middlewares/authMiddleware';
-import multer from 'multer';
+import { upload } from '../middlewares/upload';
 
 const router = Router();
-
-// Configuração do multer para upload de arquivos
-const storage = multer.memoryStorage();
-const upload = multer({ 
-  storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // Limite de 10MB
-  }
-});
 
 /**
  * Rotas de propriedades, categorias e documentos protegidas por autenticação/admin.

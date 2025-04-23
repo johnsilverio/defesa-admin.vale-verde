@@ -32,9 +32,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 // src/routes/index.ts
 const express_1 = require("express");
@@ -42,16 +39,8 @@ const documentController = __importStar(require("../controllers/documentControll
 const propertyController = __importStar(require("../controllers/propertyController"));
 const categoryController = __importStar(require("../controllers/categoryController"));
 const authMiddleware_1 = require("../middlewares/authMiddleware");
-const multer_1 = __importDefault(require("multer"));
+const upload_1 = require("../middlewares/upload");
 const router = (0, express_1.Router)();
-// Configuração do multer para upload de arquivos
-const storage = multer_1.default.memoryStorage();
-const upload = (0, multer_1.default)({
-    storage,
-    limits: {
-        fileSize: 10 * 1024 * 1024 // Limite de 10MB
-    }
-});
 /**
  * Rotas de propriedades, categorias e documentos protegidas por autenticação/admin.
  */
@@ -71,8 +60,8 @@ router.put('/categories-order', authMiddleware_1.authMiddleware, authMiddleware_
 // Rotas de documentos
 router.get('/documents', authMiddleware_1.authMiddleware, documentController.getAllDocuments);
 router.get('/documents/:id', authMiddleware_1.authMiddleware, documentController.getDocumentById);
-router.post('/documents', authMiddleware_1.authMiddleware, upload.single('file'), documentController.createDocument);
-router.put('/documents/:id', authMiddleware_1.authMiddleware, upload.single('file'), documentController.updateDocument);
+router.post('/documents', authMiddleware_1.authMiddleware, upload_1.upload.single('file'), documentController.createDocument);
+router.put('/documents/:id', authMiddleware_1.authMiddleware, upload_1.upload.single('file'), documentController.updateDocument);
 router.delete('/documents/:id', authMiddleware_1.authMiddleware, authMiddleware_1.adminMiddleware, documentController.deleteDocument);
 router.get('/documents/:id/download', authMiddleware_1.authMiddleware, documentController.downloadDocument);
 exports.default = router;

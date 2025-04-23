@@ -14,6 +14,7 @@ const zod_1 = require("zod");
 const document_1 = require("../models/document");
 const slugify_1 = require("../utils/slugify");
 const storageService_1 = require("../services/storageService");
+// (Se precisar do upload, importar de '../middlewares/upload')
 const documentSchema = zod_1.z.object({
     title: zod_1.z.string().min(1, 'Título é obrigatório'),
     description: zod_1.z.string().optional(),
