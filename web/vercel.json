@@ -1,6 +1,6 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://SUA_URL_API_PRODUCAO/api/:path*" }
+    { "source": "/api/:path*", "destination": "https://defesa-admin-api.vercel.app/api/:path*" }
   ]
 }
