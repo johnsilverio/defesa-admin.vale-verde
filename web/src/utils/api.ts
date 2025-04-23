@@ -1,5 +1,9 @@
 // Utilitário para requisições à API
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+// Em produção, usamos caminhos relativos que serão redirecionados pelo Vercel
+// Em desenvolvimento, usamos a URL completa definida em .env.local
+const API_URL = process.env.NEXT_PUBLIC_ENV === 'production' 
+  ? '' // Caminho vazio para usar URLs relativas em produção (com rewrite do Vercel)
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
 const ENV = process.env.NEXT_PUBLIC_ENV || 'development';
 
 if (ENV === 'development' && typeof window !== 'undefined') {
