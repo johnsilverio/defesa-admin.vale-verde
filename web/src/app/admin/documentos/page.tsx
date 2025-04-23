@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaPlus, FaEdit, FaTrash, FaDownload, FaFolder } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaDownload, FaFolder, FaFileUpload, FaTags, FaSearch, FaCalendarAlt, FaFileDownload, FaChevronLeft, FaChevronRight, FaUndo, FaFileAlt } from 'react-icons/fa';
 
 interface Document {
   _id: string;
@@ -59,6 +59,9 @@ export default function DocumentsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -72,7 +75,8 @@ export default function DocumentsPage() {
   const [filters, setFilters] = useState({
     property: '',
     category: '',
-    search: ''
+    search: '',
+    sortBy: 'date_desc'
   });
   
   const [isDragging, setIsDragging] = useState(false);
@@ -317,7 +321,8 @@ export default function DocumentsPage() {
     setFilters({
       property: '',
       category: '',
-      search: ''
+      search: '',
+      sortBy: 'date_desc'
     });
     
     // Load all documents
@@ -410,21 +415,27 @@ export default function DocumentsPage() {
   const handleDelete = async (documentId: string) => {
     if (!token) return;
     
-    if (!confirm('Tem certeza que deseja excluir este documento?')) {
-      return;
+    if (deleteConfirmId) {
+      try {
+        await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/documents/${deleteConfirmId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Remove from local state
+        setDocuments(documents.filter(doc => doc._id !== deleteConfirmId));
+        setDeleteConfirmId(null);
+      } catch (err) {
+        console.error('Error deleting document:', err);
+        setError('Erro ao excluir documento');
+        setDeleteConfirmId(null);
+      }
+    } else {
+      setDeleteConfirmId(documentId);
     }
-    
-    try {
-      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/documents/${documentId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      // Remove from local state
-      setDocuments(documents.filter(doc => doc._id !== documentId));
-    } catch (err) {
-      console.error('Error deleting document:', err);
-      setError('Erro ao excluir documento');
-    }
+  };
+
+  const confirmDelete = (documentId: string) => {
+    setDeleteConfirmId(documentId);
   };
 
   const downloadDocument = async (documentId: string) => {
@@ -482,141 +493,335 @@ export default function DocumentsPage() {
   };
   
   if (loading && documents.length === 0) {
-  return (
-      <div className="p-4">
-        <h1 className="text-2xl font-bold mb-6">Gerenciar Documentos</h1>
-        <div className="flex justify-center items-center min-h-[300px]">
-          <div className="spinner"></div>
+    return (
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--primary-dark)]">Gerenciar Documentos</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Adicione, edite e gerencie os documentos do sistema</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            <button 
+              onClick={openCreateForm}
+              className="admin-btn admin-btn-primary w-full sm:w-auto flex items-center justify-center min-h-[44px]"
+            >
+              <FaFileUpload className="inline-block flex-shrink-0 mr-2" /> 
+              <span>Novo Documento</span>
+            </button>
+            <button 
+              className="admin-btn admin-btn-secondary w-full sm:w-auto flex items-center justify-center min-h-[44px]"
+              onClick={() => router.push('/admin/documentos/categorias')}
+            >
+              <FaTags className="inline-block flex-shrink-0 mr-2" /> 
+              <span>Gerenciar Categorias</span>
+            </button>
+          </div>
+        </div>
+        
+        <div className="bg-white shadow-md rounded-lg overflow-hidden p-4 sm:p-6 border border-gray-200 mb-6">
+          <h2 className="text-lg sm:text-xl font-bold text-[var(--primary-dark)] mb-4">Filtros</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                Categoria
+              </label>
+              <select
+                id="categoryFilter"
+                className="shadow border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                value={filters.category}
+                onChange={(e) => setFilters({...filters, category: e.target.value})}
+              >
+                <option value="">Todas as categorias</option>
+                {categories.map(cat => (
+                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="searchFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                Buscar por título
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="searchFilter"
+                  className="shadow border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  placeholder="Digite para buscar..."
+                  value={filters.search}
+                  onChange={(e) => setFilters({...filters, search: e.target.value})}
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <FaSearch className="h-5 w-5 text-gray-400" />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="sortOrder" className="block text-sm font-medium text-gray-700 mb-1">
+                Ordenar por
+              </label>
+              <select
+                id="sortOrder"
+                className="shadow border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                value={filters.sortBy}
+                onChange={(e) => setFilters({...filters, sortBy: e.target.value as any})}
+              >
+                <option value="date_desc">Data (mais recente)</option>
+                <option value="date_asc">Data (mais antigo)</option>
+                <option value="title_asc">Título (A-Z)</option>
+                <option value="title_desc">Título (Z-A)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-end mt-4">
+            <button 
+              className="admin-btn admin-btn-outline py-2 px-4 flex items-center justify-center min-h-[44px]" 
+              onClick={resetFilters}
+            >
+              <FaUndo className="inline-block flex-shrink-0 mr-2" /> 
+              <span>Limpar filtros</span>
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--primary)]"></div>
         </div>
       </div>
     );
   }
   
   return (
-    <div className="p-4">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--primary-dark)]">Gerenciar Documentos</h1>
-          <p className="text-gray-600 mt-1">Adicione, edite e gerencie os documentos disponíveis no site</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--primary-dark)]">Gerenciar Documentos</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Adicione, edite e gerencie os documentos do sistema</p>
         </div>
-        <div className="flex space-x-2">
-          <Link 
-            href="/admin/documentos/categorias" 
-            className="admin-btn admin-btn-secondary"
-          >
-            <FaFolder /> Categorias
-          </Link>
-          <button
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <button 
             onClick={openCreateForm}
-            className="admin-btn admin-btn-primary"
+            className="admin-btn admin-btn-primary w-full sm:w-auto flex items-center justify-center min-h-[44px]"
           >
-            <FaPlus /> Novo Documento
+            <FaFileUpload className="inline-block flex-shrink-0 mr-2" /> 
+            <span>Novo Documento</span>
+          </button>
+          <button 
+            className="admin-btn admin-btn-secondary w-full sm:w-auto flex items-center justify-center min-h-[44px]"
+            onClick={() => router.push('/admin/documentos/categorias')}
+          >
+            <FaTags className="inline-block flex-shrink-0 mr-2" /> 
+            <span>Gerenciar Categorias</span>
           </button>
         </div>
       </div>
       
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-100">
-        <h2 className="text-lg font-semibold mb-4 text-[var(--primary-dark)] flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          Filtros
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="bg-white shadow-md rounded-lg overflow-hidden p-4 sm:p-6 border border-gray-200 mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-[var(--primary-dark)] mb-4">Filtros</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Propriedade
-            </label>
-            <select
-              name="property"
-              value={filters.property}
-              onChange={handleFilterChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors"
-            >
-              <option value="">Todas as propriedades</option>
-              {properties.map(property => (
-                <option key={property._id} value={property.slug}>
-                  {property.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2">
+            <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700 mb-1">
               Categoria
             </label>
             <select
-              name="category"
+              id="categoryFilter"
+              className="shadow border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               value={filters.category}
-              onChange={handleFilterChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors"
+              onChange={(e) => setFilters({...filters, category: e.target.value})}
             >
               <option value="">Todas as categorias</option>
-              {categories.map(category => (
-                <option key={category._id} value={category._id}>
-                  {category.name} ({getPropertyName(category.property)})
-                </option>
+              {categories.map(cat => (
+                <option key={cat._id} value={cat._id}>{cat.name}</option>
               ))}
             </select>
           </div>
-          
+
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2">
-              Busca
+            <label htmlFor="searchFilter" className="block text-sm font-medium text-gray-700 mb-1">
+              Buscar por título
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
               <input
                 type="text"
-                name="search"
+                id="searchFilter"
+                className="shadow border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder="Digite para buscar..."
                 value={filters.search}
-                onChange={handleFilterChange}
-                placeholder="Buscar por título ou descrição"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors"
+                onChange={(e) => setFilters({...filters, search: e.target.value})}
               />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <FaSearch className="h-5 w-5 text-gray-400" />
+              </div>
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="sortOrder" className="block text-sm font-medium text-gray-700 mb-1">
+              Ordenar por
+            </label>
+            <select
+              id="sortOrder"
+              className="shadow border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={filters.sortBy}
+              onChange={(e) => setFilters({...filters, sortBy: e.target.value as any})}
+            >
+              <option value="date_desc">Data (mais recente)</option>
+              <option value="date_asc">Data (mais antigo)</option>
+              <option value="title_asc">Título (A-Z)</option>
+              <option value="title_desc">Título (Z-A)</option>
+            </select>
           </div>
         </div>
         
-        <div className="flex justify-end mt-6 space-x-3">
-          <button
+        <div className="flex items-center justify-end mt-4">
+          <button 
+            className="admin-btn admin-btn-outline py-2 px-4 flex items-center justify-center min-h-[44px]" 
             onClick={resetFilters}
-            className="admin-btn admin-btn-outline"
           >
-            Limpar
-          </button>
-          <button
-            onClick={applyFilters}
-            className="admin-btn admin-btn-primary"
-          >
-            Aplicar Filtros
+            <FaUndo className="inline-block flex-shrink-0 mr-2" /> 
+            <span>Limpar filtros</span>
           </button>
         </div>
       </div>
-
-      {/* Document Form Modal */}
+      
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--primary)]"></div>
+        </div>
+      ) : documents.length > 0 ? (
+        <div className="space-y-4">
+          {documents.map(doc => (
+            <div 
+              key={doc._id} 
+              className="bg-white shadow-sm rounded-lg p-4 sm:p-5 border border-gray-200 hover:shadow-md transition-shadow duration-200"
+            >
+              <div className="flex flex-col md:flex-row justify-between">
+                <div className="flex-grow mb-4 md:mb-0 md:mr-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 mr-3 mt-1">
+                      <FaFileAlt className="h-6 w-6 text-[var(--primary)]" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-[var(--primary-dark)] mb-1">{doc.title}</h3>
+                      <p className="text-sm text-gray-600 mb-2">{doc.description}</p>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {doc.category && (
+                          <span 
+                            key={doc.category._id} 
+                            className="inline-block bg-[var(--primary-50)] text-[var(--primary-dark)] text-xs px-2 py-1 rounded-full"
+                          >
+                            {doc.category.name}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500">
+                        <FaCalendarAlt className="mr-1" />
+                        <span>{new Date(doc.createdAt).toLocaleDateString('pt-BR')}</span>
+                        <span className="mx-2">•</span>
+                        <FaFileDownload className="mr-1" />
+                        <span>{doc.downloads || 0} downloads</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end space-x-3 md:flex-col md:space-x-0 md:space-y-2">
+                  <button
+                    onClick={() => openEditForm(doc)}
+                    className="admin-btn admin-btn-secondary flex items-center justify-center min-w-[44px] min-h-[44px] px-3 py-2"
+                    title="Editar documento"
+                  >
+                    <FaEdit size={18} className="inline-block" /> 
+                    <span className="hidden sm:inline ml-2">Editar</span>
+                  </button>
+                  <button
+                    onClick={() => confirmDelete(doc._id)}
+                    className="admin-btn admin-btn-danger flex items-center justify-center min-w-[44px] min-h-[44px] px-3 py-2"
+                    title="Excluir documento"
+                  >
+                    <FaTrash size={18} className="inline-block" /> 
+                    <span className="hidden sm:inline ml-2">Excluir</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={() => setPage(page - 1)}
+              disabled={page === 1}
+              className="admin-btn admin-btn-outline py-2 px-4 flex items-center justify-center min-w-[44px] min-h-[44px] disabled:opacity-50"
+            >
+              <FaChevronLeft className="inline-block" />
+            </button>
+            <span className="py-2 px-4 bg-white border border-gray-300 rounded-md flex items-center justify-center min-h-[44px]">
+              Página {page} de {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(page + 1)}
+              disabled={page === totalPages}
+              className="admin-btn admin-btn-outline py-2 px-4 flex items-center justify-center min-w-[44px] min-h-[44px] disabled:opacity-50"
+            >
+              <FaChevronRight className="inline-block" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white shadow-sm rounded-lg p-6 border border-gray-200 text-center">
+          <FaFileAlt className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhum documento encontrado</h3>
+          <p className="text-gray-500 mb-4">Não foram encontrados documentos com os filtros selecionados.</p>
+          <button
+            onClick={openCreateForm}
+            className="admin-btn admin-btn-primary flex items-center justify-center min-h-[44px]"
+          >
+            <FaFileUpload className="inline-block flex-shrink-0 mr-2" /> 
+            <span>Adicionar um documento</span>
+          </button>
+        </div>
+      )}
+      
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-5 sm:p-6 rounded-lg w-full max-w-md shadow-xl">
+            <div className="mb-5 sm:mb-6 pb-3 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-[var(--primary-dark)]">Confirmar exclusão</h2>
+            </div>
+            <p className="mb-5 sm:mb-6 text-gray-700">
+              Tem certeza que deseja excluir este documento? Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="admin-btn admin-btn-outline w-full sm:w-auto flex items-center justify-center min-h-[44px]"
+              >
+                <span>Cancelar</span>
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirmId)}
+                className="admin-btn admin-btn-danger w-full sm:w-auto flex items-center justify-center min-h-[44px]"
+              >
+                <FaTrash className="inline-block flex-shrink-0 mr-2" /> 
+                <span>Excluir</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de Novo/Editar Documento */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-xl shadow-xl">
-            <div className="flex items-center justify-between mb-6 pb-3 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-[var(--primary-dark)]">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl my-4 sm:my-8">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+              <h2 className="text-lg sm:text-xl font-bold text-[var(--primary-dark)]">
                 {isEditing ? 'Editar Documento' : 'Novo Documento'}
               </h2>
               <button
                 onClick={closeForm}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-gray-500 hover:text-gray-700 transition-colors p-2 rounded-full"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -624,200 +829,215 @@ export default function DocumentsPage() {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Título
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                  required
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Descrição
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                  rows={3}
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Propriedade
-                </label>
-                <select
-                  name="property"
-                  value={formData.property}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                  required
-                >
-                  {properties.map(property => (
-                    <option key={property._id} value={property._id}>
-                      {property.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Categoria
-                </label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                  required
-                >
-                  {filteredCategories.map(category => (
-                    <option key={category._id} value={category._id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="mb-4">
-                <label className="flex items-center space-x-2">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="title" className="block text-gray-700 text-sm font-bold mb-2">
+                    Título
+                  </label>
+                  <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="description" className="block text-gray-700 text-sm font-bold mb-2">
+                    Descrição
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    rows={3}
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="property" className="block text-gray-700 text-sm font-bold mb-2">
+                    Propriedade
+                  </label>
+                  <select
+                    id="property"
+                    name="property"
+                    value={formData.property}
+                    onChange={handleInputChange}
+                    className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    required
+                  >
+                    {properties.map(property => (
+                      <option key={property._id} value={property._id}>
+                        {property.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="category" className="block text-gray-700 text-sm font-bold mb-2">
+                    Categoria
+                  </label>
+                  <select
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    required
+                  >
+                    {filteredCategories.map(category => (
+                      <option key={category._id} value={category._id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex items-center">
                   <input
                     type="checkbox"
+                    id="isHighlighted"
                     name="isHighlighted"
                     checked={formData.isHighlighted}
                     onChange={handleInputChange}
-                    className="h-5 w-5 text-[var(--primary)] rounded focus:ring-[var(--primary)]"
+                    className="h-5 w-5 mr-3"
                   />
-                  <span className="text-gray-700 font-medium">Destacar documento</span>
-                </label>
-                <p className="text-sm text-gray-500 mt-1 ml-7">
-                  Marque esta opção para destacar documentos essenciais na página inicial e na biblioteca de documentos
-                </p>
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  {isEditing ? 'Substituir arquivo (opcional)' : 'Arquivo'}
-                </label>
-                
-                <div 
-                  className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
-                    isDragging 
-                      ? 'border-[var(--primary)] bg-[var(--primary-50)]' 
-                      : formData.file 
-                        ? 'border-green-300 bg-green-50' 
-                        : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                  onDragEnter={handleDragEnter}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <div className="flex flex-col items-center justify-center">
-                    {!formData.file ? (
-                      <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                        <p className="text-sm text-gray-500 mb-2">
-                          Arraste e solte um arquivo aqui, ou
-                        </p>
-                        <div className="relative">
-                          <input
-                            id="file-input"
-                            type="file"
-                            name="file"
-                            onChange={handleFileChange}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            required={!isEditing}
-                          />
-                          <button
-                            type="button"
-                            className="px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-dark)] transition-colors"
-                            onClick={() => window.document.getElementById('file-input')?.click()}
-                          >
-                            Escolher arquivo
-                          </button>
-                        </div>
-                        {isEditing && selectedDocument && (
-                          <p className="text-sm text-gray-500 mt-4">
-                            Arquivo atual: <span className="font-medium">{selectedDocument?.originalFileName}</span> ({formatFileSize(selectedDocument?.fileSize || 0)})
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <div className="w-full">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-sm font-semibold text-gray-700">Arquivo selecionado</h4>
-                          <button
-                            type="button"
-                            onClick={removeSelectedFile}
-                            className="text-red-500 hover:text-red-700 transition-colors"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                        <div className="bg-white p-4 rounded border border-gray-200 flex items-start">
-                          <div className="rounded-md bg-blue-100 p-2 mr-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-gray-900 truncate">{formData.file.name}</h4>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formatFileSize(formData.file.size)} · {formData.file.type || 'Desconhecido'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex justify-center mt-3">
-                          <button
-                            type="button"
-                            className="text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] transition-colors"
-                            onClick={() => window.document.getElementById('file-input')?.click()}
-                          >
-                            Trocar arquivo
-                          </button>
-                          <input
-                            id="file-input"
-                            type="file"
-                            className="hidden"
-                            onChange={handleFileChange}
-                          />
-                        </div>
-                      </div>
-                    )}
+                  <div>
+                    <label htmlFor="isHighlighted" className="text-gray-700 font-medium">
+                      Destacar documento
+                    </label>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Marque esta opção para destacar documentos importantes na biblioteca
+                    </p>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Formatos suportados: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG
-                </p>
+                
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    {isEditing ? 'Substituir arquivo (opcional)' : 'Arquivo'}
+                  </label>
+                  
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
+                      isDragging 
+                        ? 'border-[var(--primary)] bg-[var(--primary-50)]' 
+                        : formData.file 
+                          ? 'border-green-300 bg-green-50' 
+                          : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onDragEnter={handleDragEnter}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    <div className="flex flex-col items-center justify-center">
+                      {!formData.file ? (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <p className="text-sm text-gray-500 mb-2">
+                            Arraste e solte um arquivo aqui, ou
+                          </p>
+                          <div className="relative">
+                            <input
+                              id="file-input"
+                              type="file"
+                              name="file"
+                              onChange={handleFileChange}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              required={!isEditing}
+                            />
+                            <button
+                              type="button"
+                              className="px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-dark)] transition-colors"
+                              onClick={() => window.document.getElementById('file-input')?.click()}
+                            >
+                              Escolher arquivo
+                            </button>
+                          </div>
+                          {isEditing && selectedDocument && (
+                            <p className="text-sm text-gray-500 mt-4">
+                              Arquivo atual: <span className="font-medium">{selectedDocument?.originalFileName}</span> ({formatFileSize(selectedDocument?.fileSize || 0)})
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-full">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-gray-700">Arquivo selecionado</h4>
+                            <button
+                              type="button"
+                              onClick={removeSelectedFile}
+                              className="text-red-500 hover:text-red-700 transition-colors"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                          <div className="bg-white p-4 rounded border border-gray-200 flex items-start">
+                            <div className="rounded-md bg-blue-100 p-2 mr-3">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-medium text-gray-900 truncate">{formData.file.name}</h4>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatFileSize(formData.file.size)} · {formData.file.type || 'Desconhecido'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex justify-center mt-3">
+                            <button
+                              type="button"
+                              className="text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] transition-colors"
+                              onClick={() => window.document.getElementById('file-input')?.click()}
+                            >
+                              Trocar arquivo
+                            </button>
+                            <input
+                              id="file-input"
+                              type="file"
+                              className="hidden"
+                              onChange={handleFileChange}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Formatos suportados: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG
+                  </p>
+                </div>
               </div>
               
-              <div className="flex justify-end pt-4 border-t border-gray-200 gap-3">
+              {error && (
+                <div className="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                  {error}
+                </div>
+              )}
+              
+              <div className="flex flex-col sm:flex-row justify-end mt-6 pt-4 border-t border-gray-200 gap-3">
                 <button
                   type="button"
                   onClick={closeForm}
-                  className="admin-btn admin-btn-outline"
+                  className="admin-btn admin-btn-outline w-full sm:w-auto flex items-center justify-center min-h-[44px]"
                 >
-                  Cancelar
+                  <span>Cancelar</span>
                 </button>
                 <button
                   type="submit"
-                  className="admin-btn admin-btn-primary"
+                  className="admin-btn admin-btn-primary w-full sm:w-auto flex items-center justify-center min-h-[44px]"
                 >
                   {isEditing ? 'Atualizar' : 'Salvar'}
                 </button>
@@ -826,108 +1046,6 @@ export default function DocumentsPage() {
           </div>
         </div>
       )}
-      
-      {/* Documents List */}
-      <div className="bg-white rounded-lg shadow-md border border-gray-100">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Documento
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Categoria
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Propriedade
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Data
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {documents.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                    <div className="flex flex-col items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <p className="text-lg font-medium">Nenhum documento encontrado</p>
-                      <p className="text-sm">Clique em "Novo Documento" para adicionar o primeiro documento</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                documents.map(doc => (
-                  <tr key={doc._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-start">
-                        <div className="text-sm font-medium text-gray-900 mb-1">{doc.title}</div>
-                        <div>
-                          {doc.isHighlighted && (
-                            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium ml-2 py-0.5 px-2 rounded-full">
-                              Crucial
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-500 max-w-sm overflow-hidden text-ellipsis">{doc.description}</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        <span className="font-medium">Arquivo:</span> {doc.originalFileName} ({formatFileSize(doc.fileSize)})
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{doc.category?.name || '—'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{getPropertyName(doc.property)}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {new Date(doc.createdAt).toLocaleDateString('pt-BR')}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(doc.createdAt).toLocaleTimeString('pt-BR')}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => downloadDocument(doc._id)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="Download"
-                        >
-                          <FaDownload />
-                        </button>
-                        <button
-                          onClick={() => openEditForm(doc)}
-                          className="text-yellow-600 hover:text-yellow-900"
-                          title="Editar"
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(doc._id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Excluir"
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 }

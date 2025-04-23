@@ -16,7 +16,10 @@
     "create-env:prod": "node -e \"require('fs').writeFileSync('.env.production.local', 'NEXT_PUBLIC_API_URL=https://api.seu-site-de-producao.com\\nNEXT_PUBLIC_ENV=production')\""
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.2",
+    "@heroicons/react": "^2.2.0",
     "axios": "^1.8.4",
+    "clsx": "^2.1.1",
     "next": "14.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -26,6 +29,7 @@
     "react-slick": "^0.30.3",
     "slick-carousel": "^1.8.1",
     "swr": "^2.2.5",
+    "tailwind-merge": "^3.2.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

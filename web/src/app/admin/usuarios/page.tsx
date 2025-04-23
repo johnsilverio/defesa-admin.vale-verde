@@ -214,7 +214,7 @@ export default function UsersPage() {
         </div>
         <button
           onClick={() => setModalType('create')}
-          className="admin-btn admin-btn-primary"
+          className="admin-btn admin-btn-primary w-full md:w-auto mt-2 md:mt-0"
         >
           <FaUserPlus className="mr-2" /> Novo Usuário
         </button>
@@ -222,7 +222,7 @@ export default function UsersPage() {
 
       <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
         <div className="overflow-x-auto">
-          <table className="min-w-full">
+          <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
@@ -235,25 +235,25 @@ export default function UsersPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {users.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">{user.name}</td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap font-medium">{user.name}</td>
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                     <span className="block text-xs sm:text-sm">{user.email}</span>
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       user.role === 'admin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
                     }`}>
                       {user.role === 'admin' ? 'Admin' : 'Usuário'}
                     </span>
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                     {user.role === 'admin' ? (
                       <span className="text-gray-500 text-xs">Acesso completo</span>
                     ) : (
                       <div>
                         {user.properties && user.properties.length > 0 ? (
                           user.properties.map((prop, index) => (
-                            <span key={index} className="px-2 mr-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                            <span key={index} className="px-2 py-1 mr-1 mb-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                               {prop}
                             </span>
                           ))
@@ -263,33 +263,33 @@ export default function UsersPage() {
                       </div>
                     )}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                     {deleteConfirmation === user.id ? (
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleDelete(user.id)}
-                          className="text-green-600 hover:text-green-900 transition-colors p-1 rounded-full hover:bg-green-50"
+                          className="text-green-600 hover:text-green-900 transition-colors p-2 rounded-full hover:bg-green-50"
                           title="Confirmar"
                           data-user-id={user.id}
                         >
-                          <FaCheck size={16} />
+                          <FaCheck size={18} />
                         </button>
                         <button
                           onClick={() => setDeleteConfirmation(null)}
-                          className="text-red-600 hover:text-red-900 transition-colors p-1 rounded-full hover:bg-red-50"
+                          className="text-red-600 hover:text-red-900 transition-colors p-2 rounded-full hover:bg-red-50"
                           title="Cancelar"
                         >
-                          <FaTimes size={16} />
+                          <FaTimes size={18} />
                         </button>
                       </div>
                     ) : (
-                      <div className="flex space-x-3">
+                      <div className="flex space-x-4">
                         <button
                           onClick={() => handleEdit(user)}
                           className="text-indigo-600 hover:text-indigo-900 transition-colors p-2 rounded-full hover:bg-indigo-50"
                           title={user.email === localStorage.getItem('user_email') ? "Editar (Configurações)" : "Editar"}
                         >
-                          <FaEdit size={16} />
+                          <FaEdit size={18} />
                         </button>
                         {user.email !== window.localStorage.getItem('user_email') && (
                           <button 
@@ -297,7 +297,7 @@ export default function UsersPage() {
                             className="text-red-600 hover:text-red-900 transition-colors p-2 rounded-full hover:bg-red-50"
                             title="Excluir"
                           >
-                            <FaTrash size={16} />
+                            <FaTrash size={18} />
                           </button>
                         )}
                       </div>
@@ -319,7 +319,7 @@ export default function UsersPage() {
               </h2>
               <button
                 onClick={() => setModalType(null)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-gray-500 hover:text-gray-700 transition-colors p-2 rounded-full"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -337,7 +337,7 @@ export default function UsersPage() {
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     required
                   />
                 </div>
@@ -350,7 +350,7 @@ export default function UsersPage() {
                     id="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     required
                   />
                 </div>
@@ -363,7 +363,7 @@ export default function UsersPage() {
                     id="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     required={modalType === 'create'}
                   />
                 </div>
@@ -375,7 +375,7 @@ export default function UsersPage() {
                     id="role"
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value as 'user' | 'admin' })}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   >
                     <option value="user">Usuário</option>
                     <option value="admin">Administrador</option>
@@ -387,7 +387,7 @@ export default function UsersPage() {
                     <label className="block text-gray-700 text-sm font-bold mb-2">
                       Propriedades
                     </label>
-                    <div className="flex items-center mb-2">
+                    <div className="flex items-center mb-2 py-2">
                       <input
                         type="checkbox"
                         id="fazenda-brilhante"
@@ -405,9 +405,9 @@ export default function UsersPage() {
                             });
                           }
                         }}
-                        className="mr-2 h-4 w-4"
+                        className="mr-3 h-5 w-5"
                       />
-                      <label htmlFor="fazenda-brilhante" className="text-sm">Fazenda Brilhante</label>
+                      <label htmlFor="fazenda-brilhante" className="text-base">Fazenda Brilhante</label>
                     </div>
                     {formData.properties.length === 0 && (
                       <p className="text-red-500 text-xs">Selecione pelo menos uma propriedade</p>
@@ -420,13 +420,13 @@ export default function UsersPage() {
                 <button
                   type="button"
                   onClick={() => setModalType(null)}
-                  className="admin-btn admin-btn-outline mr-3"
+                  className="admin-btn admin-btn-outline mr-3 min-w-[100px]"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="admin-btn admin-btn-primary"
+                  className="admin-btn admin-btn-primary min-w-[100px]"
                 >
                   {modalType === 'create' ? 'Criar' : 'Atualizar'}
                 </button>
