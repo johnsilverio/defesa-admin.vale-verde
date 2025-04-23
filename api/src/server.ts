@@ -83,8 +83,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser(process.env.COOKIE_SECRET || 'defesa-admin-secret'));
 
-// Servir arquivos estáticos
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Remova essa linha que está causando o erro em ambientes serverless
+// app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Log de requisições em desenvolvimento
 if (process.env.NODE_ENV !== 'production') {

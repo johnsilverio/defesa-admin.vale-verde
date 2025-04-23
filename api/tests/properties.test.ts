@@ -9,12 +9,46 @@ import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
 import dotenv from 'dotenv';
+import { jest } from '@jest/globals';
+
+// Mock aprimorado do serviço Supabase para incluir as funções de gerenciamento de pastas
+jest.mock('../src/services/storageService', () => ({
+  uploadFile: jest.fn().mockImplementation(async (path) => {
+    console.log(`Mock: Upload de arquivo para ${path}`);
+    return { path: path };
+  }),
+  getFileUrl: jest.fn().mockImplementation(async (path) => {
+    console.log(`Mock: Gerando URL para ${path}`);
+    return `https://mock-supabase.com/${path}?token=signed`;
+  }),
+  deleteFile: jest.fn().mockImplementation(async (path) => {
+    console.log(`Mock: Excluindo arquivo ${path}`);
+    // Esta função não retorna nada no original
+  }),
+  createFolder: jest.fn().mockImplementation(async (path) => {
+    console.log(`Mock: Criando pasta ${path}`);
+    return { path: `${path}/.folder` };
+  }),
+  folderExists: jest.fn().mockImplementation(async (path) => {
+    console.log(`Mock: Verificando se pasta ${path} existe`);
+    return true;
+  }),
+  listFolderContents: jest.fn().mockImplementation(async (path) => {
+    console.log(`Mock: Listando conteúdo da pasta ${path}`);
+    return [{ name: 'arquivo-mock.pdf', id: 'mock-id' }];
+  }),
+}));
 
 dotenv.config();
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-key-for-jwt';
 process.env.MONGODB_URI = 'mongodb://localhost:27017/defesa-admin-test';
-process.env.STORAGE_PATH = path.join(__dirname, 'test-uploads');
+// Definindo variáveis de ambiente simuladas para o Supabase
+process.env.SUPABASE_URL = 'https://mock.supabase.co';
+process.env.SUPABASE_SERVICE_KEY = 'mock-key';
+process.env.SUPABASE_BUCKET = 'mock-bucket';
+// Sinalizando que estamos em ambiente serverless (como Vercel)
+process.env.VERCEL = '1';
 
 // Configuração completa do app como no server.ts real
 const app = express();
@@ -48,11 +82,7 @@ beforeAll(async () => {
     await mongoose.connect(process.env.MONGODB_URI!);
     await mongoose.connection.dropDatabase();
     
-    // Cria pasta de uploads para testes
-    const fs = require('fs');
-    if (!fs.existsSync(process.env.STORAGE_PATH!)) {
-      fs.mkdirSync(process.env.STORAGE_PATH!, { recursive: true });
-    }
+    // Não precisamos mais criar diretórios locais, pois usamos Supabase
     
     // Cria admin para autenticação
     const reg = await request(app)
@@ -87,17 +117,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  // Limpa recursos
-  const fs = require('fs');
-  const { rmSync } = fs;
-  try {
-    if (fs.existsSync(process.env.STORAGE_PATH!)) {
-      rmSync(process.env.STORAGE_PATH!, { recursive: true, force: true });
-    }
-  } catch (e) {
-    console.error('Erro ao limpar pasta de uploads:', e);
-  }
-  
+  // Não precisamos mais limpar pastas locais
   await mongoose.disconnect();
 });
 

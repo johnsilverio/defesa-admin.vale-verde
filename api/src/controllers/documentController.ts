@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import { Document, IDocument } from '../models/document';
 import { Category } from '../models/category';
 import { Property } from '../models/property';
-import { normalizeFileName } from '../utils/slugify';
+import { normalizeFileName, slugify } from '../utils/slugify';
 import { AnyRequestHandler } from '../types/express';
 import { uploadFile, getFileUrl, deleteFile } from '../services/storageService';
 // (Se precisar do upload, importar de '../middlewares/upload')
@@ -68,19 +68,33 @@ export const getDocumentById: AnyRequestHandler = async (req, res, next) => {
  */
 export const createDocument: AnyRequestHandler = async (req, res, next) => {
   try {
-    const { title, description, category, property, isHighlighted } = req.body;
+    const { title, description, category: categoryId, property: propertyId, isHighlighted } = req.body;
     const userId = req.user?._id || req.user?.id;
     if (!req.file) return res.status(400).json({ error: 'Arquivo é obrigatório' });
 
+    // Obter informações da categoria e propriedade para construir o caminho correto
+    const category = await Category.findById(categoryId);
+    const property = await Property.findById(propertyId);
+    
+    if (!category || !property) {
+      return res.status(400).json({ 
+        error: 'Categoria ou propriedade inválida',
+        details: !category ? 'Categoria não encontrada' : 'Propriedade não encontrada'
+      });
+    }
+
+    // Construir o caminho correto no formato documentos/nome-da-propriedade/nome-categoria
     const normalizedFileName = normalizeFileName(req.file.originalname);
-    const filePath = `docs/${Date.now()}_${normalizedFileName}`;
+    const timestamp = Date.now();
+    const filePath = `documentos/${property.slug}/${category.slug}/${timestamp}_${normalizedFileName}`;
+    
     await uploadFile(filePath, req.file.buffer, req.file.mimetype);
 
     const document = new Document({
       title,
       description,
-      category,
-      property,
+      category: categoryId,
+      property: propertyId,
       isHighlighted: !!isHighlighted,
       fileName: normalizedFileName,
       originalFileName: req.file.originalname,
@@ -102,30 +116,61 @@ export const createDocument: AnyRequestHandler = async (req, res, next) => {
  */
 export const updateDocument: AnyRequestHandler = async (req, res, next) => {
   try {
-    const { title, description, category, property, isHighlighted } = req.body;
+    const { title, description, category: categoryId, property: propertyId, isHighlighted } = req.body;
     const document = await Document.findById(req.params.id);
     if (!document) return res.status(404).json({ error: 'Documento não encontrado' });
 
-    // Se houver novo arquivo, faz upload no Supabase e remove o antigo
-    if (req.file) {
-      // Remove arquivo antigo do Supabase
-      if (document.filePath) {
-        await deleteFile(document.filePath);
+    // Se houver novo arquivo ou mudança de categoria/propriedade
+    if (req.file || 
+        (categoryId && categoryId !== document.category.toString()) || 
+        (propertyId && propertyId !== document.property.toString())) {
+      
+      // Buscar informações atualizadas de categoria e propriedade
+      const category = await Category.findById(categoryId || document.category);
+      const property = await Property.findById(propertyId || document.property);
+      
+      if (!category || !property) {
+        return res.status(400).json({ 
+          error: 'Categoria ou propriedade inválida',
+          details: !category ? 'Categoria não encontrada' : 'Propriedade não encontrada'
+        });
       }
-      const normalizedFileName = normalizeFileName(req.file.originalname);
-      const filePath = `docs/${Date.now()}_${normalizedFileName}`;
-      await uploadFile(filePath, req.file.buffer, req.file.mimetype);
-      document.fileName = normalizedFileName;
-      document.originalFileName = req.file.originalname;
-      document.fileSize = req.file.size;
-      document.fileType = req.file.mimetype;
-      document.filePath = filePath;
+
+      // Se houver novo arquivo
+      if (req.file) {
+        // Remove arquivo antigo do Supabase
+        if (document.filePath) {
+          await deleteFile(document.filePath);
+        }
+        
+        const normalizedFileName = normalizeFileName(req.file.originalname);
+        const timestamp = Date.now();
+        const filePath = `documentos/${property.slug}/${category.slug}/${timestamp}_${normalizedFileName}`;
+        
+        await uploadFile(filePath, req.file.buffer, req.file.mimetype);
+        
+        document.fileName = normalizedFileName;
+        document.originalFileName = req.file.originalname;
+        document.fileSize = req.file.size;
+        document.fileType = req.file.mimetype;
+        document.filePath = filePath;
+      } 
+      // Se apenas a categoria ou propriedade mudou, mover o arquivo para o novo local
+      else if ((categoryId && categoryId !== document.category.toString()) || 
+               (propertyId && propertyId !== document.property.toString())) {
+        
+        // Implementar a movimentação do arquivo no Supabase em uma versão futura
+        // Por enquanto, notificamos que o arquivo permanece no local original
+        console.log('Aviso: A mudança de categoria/propriedade não move automaticamente os arquivos existentes');
+      }
     }
+    
     if (title) document.title = title;
     if (description !== undefined) document.description = description;
-    if (category) document.category = category;
-    if (property) document.property = property;
+    if (categoryId) document.category = categoryId;
+    if (propertyId) document.property = propertyId;
     if (isHighlighted !== undefined) document.isHighlighted = isHighlighted;
+    
     await document.save();
     res.json(document);
   } catch (error) {

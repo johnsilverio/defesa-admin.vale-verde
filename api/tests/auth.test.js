@@ -17,11 +17,16 @@ const express_1 = __importDefault(require("express"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const auth_1 = __importDefault(require("../src/routes/auth"));
 const dotenv_1 = __importDefault(require("dotenv"));
+
 // Carrega variáveis de ambiente para os testes
 dotenv_1.default.config();
+
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-key-for-jwt';
 process.env.MONGODB_URI = 'mongodb://localhost:27017/defesa-admin-test';
+
+// Os mocks do Supabase agora são gerenciados pelo arquivo jest.setup.js
+
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use('/api/auth', auth_1.default);

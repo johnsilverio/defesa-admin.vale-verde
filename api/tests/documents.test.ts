@@ -1,4 +1,4 @@
-  import request from 'supertest';
+import request from 'supertest';
 import express from 'express';
 import mongoose from 'mongoose';
 import fs from 'fs';
@@ -10,12 +10,46 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import { jest } from '@jest/globals';
+
+// Mock aprimorado do serviço Supabase para incluir as funções de gerenciamento de pastas
+jest.mock('../src/services/storageService', () => ({
+  uploadFile: jest.fn().mockImplementation(async (path) => {
+    console.log(`Mock: Upload de arquivo para ${path}`);
+    return { path: path };
+  }),
+  getFileUrl: jest.fn().mockImplementation(async (path) => {
+    console.log(`Mock: Gerando URL para ${path}`);
+    return `https://mock-supabase.com/${path}?token=signed`;
+  }),
+  deleteFile: jest.fn().mockImplementation(async (path) => {
+    console.log(`Mock: Excluindo arquivo ${path}`);
+    // Esta função não retorna nada no original
+  }),
+  createFolder: jest.fn().mockImplementation(async (path) => {
+    console.log(`Mock: Criando pasta ${path}`);
+    return { path: `${path}/.folder` };
+  }),
+  folderExists: jest.fn().mockImplementation(async (path) => {
+    console.log(`Mock: Verificando se pasta ${path} existe`);
+    return true;
+  }),
+  listFolderContents: jest.fn().mockImplementation(async (path) => {
+    console.log(`Mock: Listando conteúdo da pasta ${path}`);
+    return [{ name: 'arquivo-mock.pdf', id: 'mock-id' }];
+  }),
+}));
 
 dotenv.config();
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-key-for-jwt';
 process.env.MONGODB_URI = 'mongodb://localhost:27017/defesa-admin-test';
-process.env.STORAGE_PATH = path.join(__dirname, 'test-uploads');
+// Definindo variáveis de ambiente simuladas para o Supabase
+process.env.SUPABASE_URL = 'https://mock.supabase.co';
+process.env.SUPABASE_SERVICE_KEY = 'mock-key';
+process.env.SUPABASE_BUCKET = 'mock-bucket';
+// Sinalizando que estamos em ambiente serverless (como Vercel)
+process.env.VERCEL = '1';
 
 // Configuração completa do app como no server.ts real
 const app = express();
@@ -53,12 +87,7 @@ beforeAll(async () => {
     await mongoose.connect(process.env.MONGODB_URI!);
     await mongoose.connection.dropDatabase();
     
-    // Cria pasta de uploads para testes
-    if (!fs.existsSync(process.env.STORAGE_PATH!)) {
-      fs.mkdirSync(process.env.STORAGE_PATH!, { recursive: true });
-    }
-    
-    // Garante arquivo de teste
+    // Garante arquivo de teste para upload (ainda precisamos disso para o teste)
     const testFilePath = path.join(__dirname, 'arquivo-teste.txt');
     fs.writeFileSync(testFilePath, 'conteudo de teste');
     
@@ -133,19 +162,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  // Remove arquivo de teste
+  // Remove arquivo de teste temporário
   const testFilePath = path.join(__dirname, 'arquivo-teste.txt');
   if (fs.existsSync(testFilePath)) fs.unlinkSync(testFilePath);
-  
-  // Limpa pasta de uploads
-  try {
-    const { rmSync } = fs;
-    if (fs.existsSync(process.env.STORAGE_PATH!)) {
-      rmSync(process.env.STORAGE_PATH!, { recursive: true, force: true });
-    }
-  } catch (e) {
-    console.error('Erro ao limpar pasta de uploads:', e);
-  }
   
   await mongoose.disconnect();
 });
@@ -165,10 +184,21 @@ describe('Documents API', () => {
       .attach('file', testFilePath);
     
     console.log('Upload documento:', res.status, res.body);
+    console.log('Caminho do arquivo:', res.body.filePath);
     
     expect(res.statusCode).toBe(201);
     expect(res.body.title).toBe('Documento Teste');
+    
+    // Armazenamos o ID do documento para os próximos testes
     documentId = res.body._id;
+    console.log('ID do documento criado:', documentId);
+    
+    // O teste permite tanto o formato antigo quanto o novo para compatibilidade durante a transição
+    const isValidFormat = 
+      /^docs\/\d+_.+$/.test(res.body.filePath) || 
+      /^documentos\/[^\/]+\/[^\/]+\/\d+_.+$/.test(res.body.filePath);
+    
+    expect(isValidFormat).toBe(true);
   });
 
   it('deve listar documentos', async () => {
@@ -184,17 +214,22 @@ describe('Documents API', () => {
   });
 
   it('deve buscar documento por id', async () => {
+    expect(documentId).toBeTruthy(); // Garante que temos um ID válido
+    
     const res = await request(app)
       .get(`/api/documents/${documentId}`)
       .set('Authorization', `Bearer ${adminToken}`);
     
-    console.log('Buscar documento:', res.status, res.body);
+    console.log('Buscar documento por ID:', documentId);
+    console.log('Resposta:', res.status, res.body);
     
     expect(res.statusCode).toBe(200);
     expect(res.body._id).toBe(documentId);
   });
 
   it('deve atualizar um documento', async () => {
+    expect(documentId).toBeTruthy(); // Garante que temos um ID válido
+    
     const res = await request(app)
       .put(`/api/documents/${documentId}`)
       .set('Authorization', `Bearer ${adminToken}`)
@@ -203,20 +238,40 @@ describe('Documents API', () => {
       .field('property', propertyId)
       .field('category', categoryId);
     
-    console.log('Atualizar documento:', res.status, res.body);
+    console.log('Atualizar documento:', documentId);
+    console.log('Resposta:', res.status, res.body);
     
     expect(res.statusCode).toBe(200);
     expect(res.body.title).toBe('Documento Atualizado');
   });
 
+  // Movendo o teste de download para antes do delete
+  it('deve gerar uma URL de download para um documento', async () => {
+    expect(documentId).toBeTruthy(); // Garante que temos um ID válido
+    
+    const res = await request(app)
+      .get(`/api/documents/${documentId}/download`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    
+    console.log('Download documento:', documentId);
+    console.log('Resposta:', res.status, res.body);
+    
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('url');
+    expect(typeof res.body.url).toBe('string');
+  });
+
   it('deve deletar um documento', async () => {
+    expect(documentId).toBeTruthy(); // Garante que temos um ID válido
+    
     const res = await request(app)
       .delete(`/api/documents/${documentId}`)
       .set('Authorization', `Bearer ${adminToken}`);
     
-    console.log('Deletar documento:', res.status, res.body);
+    console.log('Deletar documento:', documentId);
+    console.log('Resposta:', res.status, res.body);
     
     expect(res.statusCode).toBe(200);
-    expect(res.body.message).toMatch(/deleted|exclu/i);
+    expect(res.body.success).toBe(true);
   });
 });

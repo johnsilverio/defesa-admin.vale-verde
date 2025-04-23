@@ -5,5 +5,6 @@ module.exports = {
   transform: {
     "^.+\\.tsx?$": ["ts-jest", {}],
   },
-  testTimeout: 10000
+  testTimeout: 10000,
+  setupFilesAfterEnv: ['./tests/jest.setup.js']
 };

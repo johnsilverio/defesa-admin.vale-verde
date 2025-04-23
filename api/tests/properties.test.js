@@ -28,6 +28,9 @@ process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-key-for-jwt';
 process.env.MONGODB_URI = 'mongodb://localhost:27017/defesa-admin-test';
 process.env.STORAGE_PATH = path_1.default.join(__dirname, 'test-uploads');
+
+// Os mocks do Supabase agora são gerenciados pelo arquivo jest.setup.js
+
 // Configuração completa do app como no server.ts real
 const app = (0, express_1.default)();
 // Middlewares essenciais

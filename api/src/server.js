@@ -85,8 +85,10 @@ else {
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
 app.use((0, cookie_parser_1.default)(process.env.COOKIE_SECRET || 'defesa-admin-secret'));
-// Servir arquivos estáticos
-app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads')));
+
+// Remover referência ao sistema de arquivos local na Vercel
+// app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads')));
+
 // Log de requisições em desenvolvimento
 if (process.env.NODE_ENV !== 'production') {
     app.use((req, res, next) => {
